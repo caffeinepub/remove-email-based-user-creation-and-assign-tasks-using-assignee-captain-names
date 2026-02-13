@@ -1,0 +1,68 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Admin-managed Assignee/Captain directory + optional selection in task forms (frontend)",
+  "requirements": [
+    {
+      "id": "REQ-7",
+      "summary": "Add an Admin Panel tab to create, list, edit, and delete Assignee/Captain directory entries with toast feedback.",
+      "acceptanceCriteria": [
+        "AdminPage includes an additional tab (e.g., \"Assignees\") alongside existing Admin tabs.",
+        "The Assignees tab provides a form with two inputs: \"Assignee Name\" and \"Captain Name\", and a save action.",
+        "The Assignees tab shows a table/list of existing entries with at least: Assignee Name, Captain Name, and actions to Edit and Delete.",
+        "Create/Edit/Delete operations show success/failure feedback using the existing toast pattern (sonner).",
+        "The assignee directory UI is only reachable within the existing Admin area (no new top-level navigation outside Admin)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/AdminPage.tsx",
+          "operation": "modify",
+          "description": "Add a new \"Assignees\" tab within the existing AdminPanel Tabs (no new top-level navigation). Use the shadcn-ui Tabs components already used here to wire the new management view. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/components/AssigneeDirectoryManagement.tsx",
+          "operation": "create",
+          "description": "Create an admin-only management component that uses shadcn-ui form inputs and a table/list layout to create, list, edit, and delete assignee/captain entries, showing success/failure via the existing sonner toast pattern. Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "summary": "Add an optional assignee selector in task create/edit dialogs that auto-fills assignee and captain fields but allows manual edits and handles empty state.",
+      "acceptanceCriteria": [
+        "TaskFormDialog and AdminTaskDialog fetch the assignee directory list and display an optional selector (e.g., \"Select Assignee (optional)\").",
+        "When an assignee is selected, the dialog auto-fills Assignee Name and Captain Name inputs based on the selected entry.",
+        "Users can still manually edit Assignee Name and Captain Name after auto-fill (selection does not lock the fields).",
+        "If there are no saved assignees, the selector indicates the empty state and the manual text inputs remain usable."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/TaskFormDialog.tsx",
+          "operation": "modify",
+          "description": "Fetch the assignee directory via a shared React Query hook and add a shadcn-ui Select labeled \"Select Assignee (optional)\". On selection, auto-fill assigneeName/captainName state while keeping the existing Input fields editable; show an empty-state item when the directory is empty. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/components/AdminTaskDialog.tsx",
+          "operation": "modify",
+          "description": "Fetch the assignee directory via the shared React Query hook and add an optional shadcn-ui Select to auto-fill assignee/captain inputs without locking manual overrides; include a clear empty-state indicator when there are no saved entries. Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-9",
+      "summary": "Introduce shared React Query hooks for the Assignee/Captain directory list and mutations with cache invalidation and consistent auth/toast error handling.",
+      "acceptanceCriteria": [
+        "A query hook exists to list assignee entries (shared by Admin assignee management and task dialogs).",
+        "Mutation hooks exist for create/update/delete assignee entries and invalidate the assignee list query on success.",
+        "Error handling uses the existing parseAuthError/toast pattern in useQueries.ts."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Add React Query hooks for the assignee directory using existing actor methods (list + create/update/delete), ensuring query caching is shared across admin management and task dialogs, mutations invalidate the list query on success, and errors use the existing parseAuthError + sonner toast pattern."
+        }
+      ]
+    }
+  ]
+}

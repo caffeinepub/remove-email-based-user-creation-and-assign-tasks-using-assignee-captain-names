@@ -1,2 +1,3 @@
-# remove-email-based-user-creation-and-assign-tasks-using-assignee-captain-names
-Exported from Caffeine project: Remove email-based user creation and assign tasks using assignee + captain names
+## 
+
+To run app build and run docker image: `docker build -t app . docker run -it --network host app`

@@ -1,0 +1,109 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 5,
+  "summary": "Task assignment app should not require creating users with email; tasks should be assigned using assignee name and their captain only.",
+  "architectural_notes": [
+    "Do not require user account creation via email; represent assignees by name and captain for task assignment."
+  ],
+  "known_issues": [],
+  "isFixRequest": false,
+  "existing_features": [
+    {
+      "id": "feature-remove-the-admin-create-new-user-and-user-list-role-management-ui-so-admins-are-no-longer-prompted-to-create-users-using-email-or-principal-id",
+      "title": "Remove the admin \"Create New User\" and user list/role management UI so admins are no longer prompted to create users using email or principal ID.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-task-create-edit-flows-to-capture-assignment-using-two-text-fields-1-assignee-name-and-2-captain-name-instead-of-selecting-an-assignee-user-principal",
+      "title": "Update task create/edit flows to capture assignment using two text fields: (1) Assignee Name and (2) Captain Name, instead of selecting an assignee user/principal.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-bulk-task-upload-to-no-longer-require-user-emails-principals-for-owner-assignee-resolution-instead-accept-assignee-name-and-captain-name-as-text-columns-and-create-tasks-without-requiring-user-creation",
+      "title": "Update bulk task upload to no longer require user emails/principals for owner/assignee resolution; instead, accept assignee name and captain name as text columns and create tasks without requiring user creation.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-new-admin-panel-ui-section-to-add-manage-assignees-and-their-captains-create-list-edit-delete",
+      "title": "Add a new Admin Panel UI section to add/manage assignees and their captains (create, list, edit, delete).",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-task-create-edit-dialogs-to-optionally-select-an-assignee-from-the-saved-directory-and-auto-fill-assignee-and-captain-fields-while-still-allowing-manual-overrides",
+      "title": "Update task create/edit dialogs to optionally select an assignee from the saved directory and auto-fill assignee and captain fields while still allowing manual overrides.",
+      "reqIds": [
+        "REQ-8"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-react-query-hooks-and-caching-for-assignee-directory-apis-and-ensure-task-related-screens-reuse-the-cached-data-where-applicable",
+      "title": "Add React Query hooks and caching for assignee directory APIs, and ensure task-related screens reuse the cached data where applicable.",
+      "reqIds": [
+        "REQ-9"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Remove/avoid 'Create New User' with email; support assigning tasks using only assignee name and their captain",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Change the backend Task model and task APIs to store assignee and captain as text fields (e.g., assigneeName, captainName) rather than a Principal assignee, and update createTask/updateTask accordingly.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Add a conditional Motoko state migration to preserve existing stored tasks when upgrading from Principal-based assignee to text-based assignee/captain fields.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-7",
+      "summary": "Add a UI option to add/manage assignees and their captain (so admins can define assignee-captain pairs)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-8",
+      "summary": "Add backend support for an admin-managed directory of assignee-to-captain pairs, including storage and admin-only CRUD APIs, plus a user-accessible read API for populating task forms.",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-12",
+      "summary": "Ensure upgrades preserve existing state by extending the conditional migration to include the new assignee directory state with safe defaults.",
+      "reqIds": [
+        "REQ-10"
+      ],
+      "status": "pending"
+    }
+  ],
+  "projectName": "Remove email-based user creation and assign tasks using assignee + captain names",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

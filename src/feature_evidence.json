@@ -1,0 +1,67 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-add-a-new-admin-panel-ui-section-to-add-manage-assignees-and-their-captains-create-list-edit-delete",
+      "featureTitle": "Add a new Admin Panel UI section to add/manage assignees and their captains (create, list, edit, delete).",
+      "files": [
+        "frontend/src/components/AssigneeDirectoryManagement.tsx",
+        "frontend/src/pages/AdminPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-7"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-update-task-create-edit-dialogs-to-optionally-select-an-assignee-from-the-saved-directory-and-auto-fill-assignee-and-captain-fields-while-still-allowing-manual-overrides",
+      "featureTitle": "Update task create/edit dialogs to optionally select an assignee from the saved directory and auto-fill assignee and captain fields while still allowing manual overrides.",
+      "files": [
+        "frontend/src/components/AdminTaskDialog.tsx",
+        "frontend/src/components/TaskFormDialog.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-8"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-react-query-hooks-and-caching-for-assignee-directory-apis-and-ensure-task-related-screens-reuse-the-cached-data-where-applicable",
+      "featureTitle": "Add React Query hooks and caching for assignee directory APIs, and ensure task-related screens reuse the cached data where applicable.",
+      "files": [
+        "frontend/src/hooks/useQueries.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-9"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

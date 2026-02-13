@@ -1,0 +1,19 @@
+{
+  "frontend/src/App.tsx": "Main application component with authentication flow, profile setup, and tabbed navigation between Dashboard, Tasks, and Admin sections with theme provider integration.",
+  "frontend/src/hooks/useQueries.ts": "Comprehensive React Query hooks for all backend operations including new assignee/captain directory management hooks (list, add, update, delete) with proper cache invalidation and toast feedback.",
+  "frontend/src/components/Header.tsx": "Application header with branding, theme toggle, and user dropdown menu showing profile info and admin badge.",
+  "frontend/src/components/Footer.tsx": "Simple footer component with copyright and caffeine.ai attribution.",
+  "frontend/src/components/ProfileSetupModal.tsx": "Modal dialog for first-time user profile setup requiring name and email input.",
+  "frontend/src/components/AccessDeniedScreen.tsx": "Full-screen authentication gate showing login button for unauthenticated users.",
+  "frontend/src/pages/Dashboard.tsx": "Analytics dashboard with interactive summary cards and charts that use backend filter mutations to fetch and display filtered task lists in TaskDetailDialog with proper loading states and error handling.",
+  "frontend/src/pages/TasksPage.tsx": "Task management page with filtering, search, table view showing assignee and captain names, and edit/delete operations.",
+  "frontend/src/pages/AdminPage.tsx": "Admin panel with three tabs (Upload, Settings, Assignees) for bulk upload, category management, and assignee directory management.",
+  "frontend/src/components/TaskFormDialog.tsx": "Task creation/editing dialog with optional assignee selector that auto-fills assignee and captain names from the directory while keeping manual input editable.",
+  "frontend/src/components/BulkUploadSection.tsx": "CSV/Excel bulk upload interface requiring Assignee Name and Captain Name columns as text without email-to-principal mapping.",
+  "frontend/src/components/CategoryManagement.tsx": "Admin interface for creating and viewing task categories, subcategories, statuses, and payment statuses.",
+  "frontend/src/components/UserManagement.tsx": "Admin interface for creating, listing, and managing users with role assignment functionality, displaying user roles with badges and dropdown selectors to change roles between admin and user, plus delete capability.",
+  "frontend/src/index.css": "Custom OKLCH color system with blue-themed palette for light and dark modes with enhanced contrast and modern design tokens.",
+  "frontend/src/components/AdminTaskDialog.tsx": "Admin-only task creation dialog with optional assignee selector that auto-fills from the directory with manual override capability and empty-state handling.",
+  "frontend/src/components/TaskDetailDialog.tsx": "Dialog component displaying filtered task lists in a table with Assignee Name and Captain Name columns.",
+  "frontend/src/components/AssigneeDirectoryManagement.tsx": "Admin-only component for managing assignee/captain pairs with create, edit, delete operations, table display, and confirmation dialogs."
+}
