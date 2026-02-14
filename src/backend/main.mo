@@ -10,6 +10,8 @@ import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
 import MixinStorage "blob-storage/Mixin";
 
+
+
 actor {
   // Initialize the access control system.
   let accessControlState = AccessControl.initState();
@@ -27,6 +29,13 @@ actor {
     paymentStatus : Text;
     assigneeName : Text;
     captainName : Text;
+    comment : Text;
+    dueDate : Time.Time;
+    assignmentDate : Time.Time;
+    completionDate : Time.Time;
+    bill : Nat;
+    advanceReceived : Nat;
+    outstandingAmount : Nat;
     createdAt : Time.Time;
     updatedAt : Time.Time;
   };
@@ -329,6 +338,13 @@ actor {
     paymentStatus : Text,
     assigneeName : Text,
     captainName : Text,
+    comment : Text,
+    dueDate : Time.Time,
+    assignmentDate : Time.Time,
+    completionDate : Time.Time,
+    bill : Nat,
+    advanceReceived : Nat,
+    outstandingAmount : Nat
   ) : async Task {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can create tasks");
@@ -355,6 +371,13 @@ actor {
       paymentStatus;
       assigneeName;
       captainName;
+      comment;
+      dueDate;
+      assignmentDate;
+      completionDate;
+      bill;
+      advanceReceived;
+      outstandingAmount;
       createdAt = Time.now();
       updatedAt = Time.now();
     };
@@ -372,6 +395,13 @@ actor {
     paymentStatus : Text,
     assigneeName : Text,
     captainName : Text,
+    comment : Text,
+    dueDate : Time.Time,
+    assignmentDate : Time.Time,
+    completionDate : Time.Time,
+    bill : Nat,
+    advanceReceived : Nat,
+    outstandingAmount : Nat
   ) : async Task {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can update tasks");
@@ -396,6 +426,13 @@ actor {
       paymentStatus;
       assigneeName;
       captainName;
+      comment;
+      dueDate;
+      assignmentDate;
+      completionDate;
+      bill;
+      advanceReceived;
+      outstandingAmount;
       createdAt = existingTask.createdAt;
       updatedAt = Time.now();
     };
@@ -587,14 +624,14 @@ actor {
   };
 
   // Bulk Task Creation with Assignee.
-  public shared ({ caller }) func bulkCreateTasks(tasksData : [(Principal, Text, Text, Text, Text, Text, Text, Text)]) : async [Task] {
+  public shared ({ caller }) func bulkCreateTasks(tasksData : [(Principal, Text, Text, Text, Text, Text, Text, Text, Text, Time.Time, Time.Time, Time.Time, Nat, Nat, Nat)]) : async [Task] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can bulk create tasks");
     };
 
     let createdTasks = tasksData.map(
       func(taskData) {
-        let (owner, client, taskCategory, subCategory, status, paymentStatus, assigneeName, captainName) = taskData;
+        let (owner, client, taskCategory, subCategory, status, paymentStatus, assigneeName, captainName, comment, dueDate, assignmentDate, completionDate, bill, advanceReceived, outstandingAmount) = taskData;
 
         // Validate that the owner exists in userProfiles
         if (not userProfiles.containsKey(owner)) {
@@ -612,6 +649,13 @@ actor {
           paymentStatus;
           assigneeName;
           captainName;
+          comment;
+          dueDate;
+          assignmentDate;
+          completionDate;
+          bill;
+          advanceReceived;
+          outstandingAmount;
           createdAt = Time.now();
           updatedAt = Time.now();
         };

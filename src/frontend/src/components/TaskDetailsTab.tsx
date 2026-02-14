@@ -2,7 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Pencil, Calendar, User, DollarSign, Briefcase } from 'lucide-react';
+import { Pencil, Calendar, User, DollarSign, Briefcase, FileText } from 'lucide-react';
 import type { Task } from '../backend';
 import { useState } from 'react';
 import TaskFormDialog from './TaskFormDialog';
@@ -33,6 +33,17 @@ export default function TaskDetailsTab({ task, isAdmin, onTaskUpdated }: TaskDet
   };
 
   const formatDate = (timestamp: bigint) => {
+    if (!timestamp || timestamp === BigInt(0)) return '-';
+    const date = new Date(Number(timestamp) / 1000000);
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric'
+    });
+  };
+
+  const formatDateTime = (timestamp: bigint) => {
+    if (!timestamp || timestamp === BigInt(0)) return '-';
     const date = new Date(Number(timestamp) / 1000000);
     return date.toLocaleDateString('en-US', { 
       year: 'numeric', 
@@ -41,6 +52,14 @@ export default function TaskDetailsTab({ task, isAdmin, onTaskUpdated }: TaskDet
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const formatCurrency = (amount: bigint) => {
+    if (!amount || amount === BigInt(0)) return '-';
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(Number(amount));
   };
 
   return (
@@ -109,15 +128,27 @@ export default function TaskDetailsTab({ task, isAdmin, onTaskUpdated }: TaskDet
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <DollarSign className="h-5 w-5" />
-              Payment
+              Financial Details
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Payment Status</p>
               <Badge variant={getPaymentColor(task.paymentStatus)} className="mt-1">
                 {task.paymentStatus}
               </Badge>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Bill</p>
+              <p className="text-base font-semibold mt-1">{formatCurrency(task.bill)}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Advance Received</p>
+              <p className="text-base font-semibold mt-1">{formatCurrency(task.advanceReceived)}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Outstanding Amount</p>
+              <p className="text-base font-semibold mt-1">{formatCurrency(task.outstandingAmount)}</p>
             </div>
           </CardContent>
         </Card>
@@ -131,16 +162,43 @@ export default function TaskDetailsTab({ task, isAdmin, onTaskUpdated }: TaskDet
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
+              <p className="text-sm font-medium text-muted-foreground">Due Date</p>
+              <p className="text-sm mt-1">{formatDate(task.dueDate)}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Assignment Date</p>
+              <p className="text-sm mt-1">{formatDate(task.assignmentDate)}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Completion Date</p>
+              <p className="text-sm mt-1">{formatDate(task.completionDate)}</p>
+            </div>
+            <Separator />
+            <div>
               <p className="text-sm font-medium text-muted-foreground">Created</p>
-              <p className="text-sm mt-1">{formatDate(task.createdAt)}</p>
+              <p className="text-sm mt-1">{formatDateTime(task.createdAt)}</p>
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Last Updated</p>
-              <p className="text-sm mt-1">{formatDate(task.updatedAt)}</p>
+              <p className="text-sm mt-1">{formatDateTime(task.updatedAt)}</p>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {task.comment && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <FileText className="h-5 w-5" />
+              Comment
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm whitespace-pre-wrap">{task.comment}</p>
+          </CardContent>
+        </Card>
+      )}
 
       {isEditing && (
         <TaskFormDialog

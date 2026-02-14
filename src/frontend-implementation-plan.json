@@ -1,22 +1,58 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Enlarge Dashboard TaskDetailDialog modal responsively",
+  "title": "Fix bulk CSV task upload ownership to default to current uploader",
   "requirements": [
     {
-      "id": "REQ-23",
-      "summary": "Increase TaskDetailDialog modal width/height on desktop while keeping it responsive on smaller screens and ensuring the task table scrolls without clipping key columns.",
+      "id": "REQ-30",
+      "summary": "Update Bulk Task Upload to stop converting CSV values into Principals and instead rely on backend default ownership (current uploader).",
       "acceptanceCriteria": [
-        "When opening the Dashboard summary card dialog titled \"All Categories\" (Dashboard > Categories card), the dialog content area is noticeably larger than before (wider and taller) on desktop screens.",
-        "The dialog remains responsive on small screens (e.g., uses viewport-relative sizing and does not overflow the viewport).",
-        "The task list content remains usable at the larger size: the table area scrolls (vertically and, if needed, horizontally) without clipping important columns (e.g., Assignee, Captain, Actions).",
-        "No changes are made to read-only Shadcn UI component sources under frontend/src/components/ui; sizing is applied via composition (e.g., DialogContent className) in app components such as frontend/src/components/TaskDetailDialog.tsx."
+        "Uploading a CSV using the Bulk Task Upload UI no longer throws a Principal checksum error mentioning \"user-0\" or \"aaaaa-aa\".",
+        "Bulk-uploaded tasks are created successfully and are owned by (i.e., visible under) the currently signed-in uploader, consistent with single-task creation when owner is not specified.",
+        "The bulk upload implementation does not call Principal.fromText(...) on any CSV-derived value."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/TaskDetailDialog.tsx",
+          "path": "frontend/src/components/BulkUploadSection.tsx",
           "operation": "modify",
-          "description": "Adjust DialogContent sizing via composition (className overrides) to use a larger, viewport-relative width/height on desktop (e.g., near-full viewport) while remaining constrained on small screens; convert the dialog interior layout to a flex column so the tab content can grow and scroll correctly; update ScrollArea usage to fill remaining height and allow the task list area to scroll vertically; wrap the task Table in an overflow-x container (and/or ensure the ScrollArea supports horizontal overflow) so columns like Assignee/Captain/Actions remain accessible without clipping. Do not modify any files under frontend/src/components/ui."
+          "description": "Remove placeholder owner principal creation and stop sending an ownerPrincipal derived from any CSV/user-list value; build the bulk upload payload so each row indicates \"no owner specified\" (e.g., null) and let the backend assign ownership to the authenticated uploader."
+        }
+      ]
+    },
+    {
+      "id": "REQ-31",
+      "summary": "Refactor BulkUploadSection to remove user-list ownership dependency and any hardcoded/placeholder principal generation while keeping current CSV parsing/validation behavior.",
+      "acceptanceCriteria": [
+        "frontend/src/components/BulkUploadSection.tsx no longer imports or uses useListAllUsers for bulk upload ownership.",
+        "frontend/src/components/BulkUploadSection.tsx no longer constructs an ownerPrincipal using `Principal.fromText('user-0')` (or any similar placeholder).",
+        "Bulk upload continues to parse/validate the existing required/optional columns as currently displayed in the UI."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/BulkUploadSection.tsx",
+          "operation": "modify",
+          "description": "Remove useListAllUsers import/usage and delete any hardcoded Principal generation (including Principal.fromText('user-0') and Principal.anonymous() for ownership); keep the same header detection, required/optional column handling, and row filtering as currently implemented."
+        }
+      ]
+    },
+    {
+      "id": "REQ-32",
+      "summary": "Adjust React Query bulkCreateTasks typing/payload so Bulk Upload can omit per-task owner and rely on backend default-to-caller behavior.",
+      "acceptanceCriteria": [
+        "The `useBulkCreateTasks` mutation in frontend/src/hooks/useQueries.ts supports a payload that does not require an explicit owner Principal for each task (e.g., allows null/omitted owner value) so the backend can default to the caller.",
+        "TypeScript builds without errors after updating the bulk upload payload typing and usage.",
+        "Bulk upload success and error toasts remain in English (e.g., \"Successfully uploaded X tasks\" / readable error messages)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Update useBulkCreateTasks mutation input typing and actor-call wiring so bulkCreateTasks can be called with tasks that have \"no owner specified\" (e.g., first tuple element typed as Principal | null, or a new input shape without owner that the hook maps to the backend call), enabling backend default ownership to the authenticated caller; ensure existing error handling continues to surface readable English toast messages."
+        },
+        {
+          "path": "frontend/src/components/BulkUploadSection.tsx",
+          "operation": "modify",
+          "description": "Align the Bulk Upload tasksData construction to the updated useBulkCreateTasks payload shape so it never requires/sends an explicit owner principal from the CSV path while preserving existing success/error toast messaging in English."
         }
       ]
     }

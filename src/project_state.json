@@ -1,13 +1,16 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 15,
+  "projectStateVersion": 19,
   "summary": "Task assignment app should not require creating users with email; tasks should be assigned using assignee name and their captain only.",
   "architectural_notes": [
-    "Do not require user account creation via email; represent assignees by name and captain for task assignment."
+    "Do not require user account creation via email; represent assignees by name and captain for task assignment.",
+    "Bulk-uploaded tasks should be owned/assigned to the currently authenticated admin performing the upload; the upload payload must not include any Principal-derived owner/assignee fields (e.g., ownerPrincipal)."
   ],
   "known_issues": [
     "Users cannot update task statuses (status changes not saving/updating).",
-    "Production app not loading after Version 14 deployment (user reports 'not loading')."
+    "Production app not loading after Version 14 deployment (user reports 'not loading').",
+    "Bulk task CSV upload fails when user-provided column headers do not exactly match the app’s expected template headers; needs template/header alignment.",
+    "Bulk task CSV upload fails with Principal checksum error (e.g., Principal \"aaaaa-aa\" invalid checksum from \"user-0\") because the frontend upload payload still sends an ownerPrincipal/Principal-derived field."
   ],
   "isFixRequest": true,
   "existing_features": [
@@ -146,6 +149,62 @@
         "REQ-23"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-update-the-admin-panel-bulk-task-upload-downloadable-csv-template-to-use-exactly-these-column-headers-in-this-order-client-name-task-category-sub-category-status-comment-assigned-name-due-date-assignment-date-completion-date-bill-advance-received-outstanding-amount-payment-status",
+      "title": "Update the Admin Panel > Bulk Task Upload downloadable CSV template to use exactly these column headers (in this order): \"Client Name\", \"Task Category\", \"Sub Category\", \"Status\", \"Comment\", \"Assigned Name\", \"Due Date\", \"Assignment Date\", \"Completion Date\", \"Bill\", \"Advance Received\", \"Outstanding Amount\", \"Payment Status\".",
+      "reqIds": [
+        "REQ-24"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-bulk-task-upload-parser-validator-to-accept-csv-files-whose-headers-match-the-new-template-case-insensitive-and-map-the-new-headers-to-task-fields-client-name-task-category-and-sub-category-must-be-required-all-other-columns-must-be-optional",
+      "title": "Update the Bulk Task Upload parser/validator to accept CSV files whose headers match the new template (case-insensitive), and map the new headers to task fields. \"Client Name\", \"Task Category\", and \"Sub Category\" must be required; all other columns must be optional.",
+      "reqIds": [
+        "REQ-25"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-wire-the-updated-bulk-upload-flow-end-to-end-so-that-the-frontend-bulk-upload-mutation-passes-the-new-fields-to-the-backend-createtask-api-and-the-upload-succeeds-without-the-generic-please-check-your-file-format-error-for-correctly-formatted-files",
+      "title": "Wire the updated bulk upload flow end-to-end so that the frontend bulk upload mutation passes the new fields to the backend createTask API and the upload succeeds without the generic \"Please check your file format\" error for correctly formatted files.",
+      "reqIds": [
+        "REQ-27"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-task-create-edit-ui-taskformdialog-and-admintaskdialog-and-task-details-ui-taskdetailstab-to-display-and-allow-editing-of-the-new-fields-comment-due-date-assignment-date-completion-date-bill-advance-received-outstanding-amount",
+      "title": "Update task create/edit UI (TaskFormDialog and AdminTaskDialog) and task details UI (TaskDetailsTab) to display and allow editing of the new fields: Comment, Due Date, Assignment Date, Completion Date, Bill, Advance Received, Outstanding Amount.",
+      "reqIds": [
+        "REQ-28"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-bulk-task-upload-flow-to-stop-converting-any-csv-value-e-g-user-0-into-a-principal-id-and-instead-assign-bulk-uploaded-tasks-to-the-currently-authenticated-uploader-matching-single-task-creation-behavior",
+      "title": "Update the Bulk Task Upload flow to stop converting any CSV value (e.g., \"user-0\") into a Principal ID, and instead assign bulk-uploaded tasks to the currently authenticated uploader (matching single-task creation behavior).",
+      "reqIds": [
+        "REQ-30"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-refactor-frontend-bulkuploadsection-to-remove-dependencies-on-the-user-list-for-determining-ownership-and-remove-any-hardcoded-placeholder-principal-generation-used-during-bulk-upload",
+      "title": "Refactor frontend BulkUploadSection to remove dependencies on the user list for determining ownership, and remove any hardcoded/placeholder principal generation used during bulk upload.",
+      "reqIds": [
+        "REQ-31"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-frontend-bulk-create-react-query-hook-typing-and-payload-shape-frontend-src-hooks-usequeries-ts-so-that-bulkcreatetasks-does-not-require-an-explicit-owner-principal-from-the-csv-upload-code-path-and-can-pass-no-owner-specified-to-the-backend-to-default-to-the-caller",
+      "title": "Update the frontend bulk-create React Query hook typing and payload shape (frontend/src/hooks/useQueries.ts) so that bulkCreateTasks does not require an explicit owner Principal from the CSV upload code path, and can pass \"no owner specified\" to the backend to default to the caller.",
+      "reqIds": [
+        "REQ-32"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -220,6 +279,34 @@
         "REQ-14"
       ],
       "status": "pending"
+    },
+    {
+      "id": "AR-24",
+      "summary": "Update the bulk task addition (CSV) template and upload parser to match the desired task-addition columns/headers (e.g., Client Name, Task Category, Sub Category, Status, Comment, Assigned Name, Due Date, Assignment Date, Completion Date, Bill, Advance Received, Outstanding Amount, Payment Status).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-27",
+      "summary": "Extend the backend Task model and task APIs to store the additional fields coming from the new upload template: comment, dueDate, assignmentDate, completionDate, bill, advanceReceived, outstandingAmount. These fields should be persisted on create and update, and returned by getTask/getTasks/filter APIs.",
+      "reqIds": [
+        "REQ-26"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-30",
+      "summary": "Ensure upgrade safety for existing stored tasks after adding new Task fields by providing safe defaults for the new fields (e.g., empty text) for tasks created prior to this change.",
+      "reqIds": [
+        "REQ-29"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-31",
+      "summary": "Fix bulk task CSV upload to stop sending ownerPrincipal (e.g., 'user-0'); instead assign bulk-uploaded tasks to the current admin uploader (matching single-task creation).",
+      "reqIds": [],
+      "status": "in_progress"
     }
   ],
   "projectName": "Remove email-based user creation and assign tasks using assignee + captain names",

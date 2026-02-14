@@ -1,24 +1,47 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-13T12:29:42.537Z",
+  "generatedAt": "2026-02-14T06:37:34.072Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 1,
-    "implemented": 1,
+    "total": 3,
+    "implemented": 3,
     "items": [
       {
-        "id": "REQ-23",
-        "summary": "Increase the size (width + height) of the Dashboard modal window shown in the screenshot (the TaskDetailDialog used for \"All Categories\" / \"All Statuses\" / \"All Payment Types\" and chart-click task lists) so it uses substantially more of the viewport on desktop while remaining responsive on smaller screens.",
+        "id": "REQ-30",
+        "summary": "Update the Bulk Task Upload flow to stop converting any CSV value (e.g., \"user-0\") into a Principal ID, and instead assign bulk-uploaded tasks to the currently authenticated uploader (matching single-task creation behavior).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/TaskDetailDialog.tsx"
+          "frontend/src/components/BulkUploadSection.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/TaskDetailDialog.tsx"
+          "frontend/src/components/BulkUploadSection.tsx"
+        ]
+      },
+      {
+        "id": "REQ-31",
+        "summary": "Refactor frontend BulkUploadSection to remove dependencies on the user list for determining ownership, and remove any hardcoded/placeholder principal generation used during bulk upload.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/BulkUploadSection.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/BulkUploadSection.tsx"
+        ]
+      },
+      {
+        "id": "REQ-32",
+        "summary": "Update the frontend bulk-create React Query hook typing and payload shape (frontend/src/hooks/useQueries.ts) so that bulkCreateTasks does not require an explicit owner Principal from the CSV upload code path, and can pass \"no owner specified\" to the backend to default to the caller.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/BulkUploadSection.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/BulkUploadSection.tsx"
         ]
       }
     ]
@@ -28,7 +51,7 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/TaskDetailDialog.tsx",
+    "frontend/src/components/BulkUploadSection.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

@@ -1,14 +1,31 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-13T12:29:42.534Z",
-  "summary": "REQ-23 appears implemented by increasing TaskDetailDialog’s viewport-relative width/height via DialogContent className overrides in an app-owned component, while keeping the dialog responsive and enabling scrolling for the task list content. No evidence shows edits to read-only UI component sources under frontend/src/components/ui.",
-  "missing_requirements": [],
-  "hallucinated_features": [],
-  "confidence": 0.74,
+  "generatedAt": "2026-02-14T06:37:34.069Z",
+  "summary": "Bulk upload flow in BulkUploadSection appears refactored to rely on the currently authenticated Internet Identity (no user list / placeholder principal visible in the shown portion). However, the diff summary does not provide concrete evidence that the React Query bulkCreateTasks hook typing/payload was updated to make owner optional. The component also introduces accepting Excel file extensions, which was not requested.",
+  "missing_requirements": [
+    {
+      "id": "REQ-32",
+      "requirement": "Update the frontend bulk-create React Query hook typing and payload shape (frontend/src/hooks/useQueries.ts) so that bulkCreateTasks does not require an explicit owner Principal from the CSV upload code path, and can pass \"no owner specified\" to the backend to default to the caller.",
+      "reason": "The provided diff content does not include the actual changes to frontend/src/hooks/useQueries.ts (only a high-level summary in frontend-file-summaries.txt), so there is no direct evidence that the mutation payload typing/shape was changed to make owner optional/omittable and that BulkUploadSection uses that new shape.",
+      "evidence": [
+        "frontend-file-summaries.txt (mentions useQueries.ts in prose only; no code diff shown)"
+      ]
+    }
+  ],
+  "hallucinated_features": [
+    {
+      "description": "Bulk upload file picker now accepts Excel file extensions (.xlsx/.xls) in addition to CSV.",
+      "reason": "The BuildRequest and acceptance criteria are specifically about fixing CSV bulk upload ownership/principal handling; adding Excel upload support is not requested.",
+      "evidence": [
+        "frontend/src/components/BulkUploadSection.tsx (handleFileChange allows 'xlsx' and 'xls')"
+      ]
+    }
+  ],
+  "confidence": 0.64,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/components/TaskDetailDialog.tsx",
+    "frontend/src/components/BulkUploadSection.tsx",
     "project_state.json"
   ]
 }

@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-increase-the-size-width-height-of-the-dashboard-modal-window-shown-in-the-screenshot-the-taskdetaildialog-used-for-all-categories-all-statuses-all-payment-types-and-chart-click-task-lists-so-it-uses-substantially-more-of-the-viewport-on-desktop-while-remaining-responsive-on-smaller-screens",
-      "featureTitle": "Increase the size (width + height) of the Dashboard modal window shown in the screenshot (the TaskDetailDialog used for \"All Categories\" / \"All Statuses\" / \"All Payment Types\" and chart-click task lists) so it uses substantially more of the viewport on desktop while remaining responsive on smaller screens.",
+      "featureId": "feature-update-the-bulk-task-upload-flow-to-stop-converting-any-csv-value-e-g-user-0-into-a-principal-id-and-instead-assign-bulk-uploaded-tasks-to-the-currently-authenticated-uploader-matching-single-task-creation-behavior",
+      "featureTitle": "Update the Bulk Task Upload flow to stop converting any CSV value (e.g., \"user-0\") into a Principal ID, and instead assign bulk-uploaded tasks to the currently authenticated uploader (matching single-task creation behavior).",
       "files": [
-        "frontend/src/components/TaskDetailDialog.tsx"
+        "frontend/src/components/BulkUploadSection.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -17,7 +17,47 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-23"
+        "REQ-30"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-refactor-frontend-bulkuploadsection-to-remove-dependencies-on-the-user-list-for-determining-ownership-and-remove-any-hardcoded-placeholder-principal-generation-used-during-bulk-upload",
+      "featureTitle": "Refactor frontend BulkUploadSection to remove dependencies on the user list for determining ownership, and remove any hardcoded/placeholder principal generation used during bulk upload.",
+      "files": [
+        "frontend/src/components/BulkUploadSection.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-31"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-update-the-frontend-bulk-create-react-query-hook-typing-and-payload-shape-frontend-src-hooks-usequeries-ts-so-that-bulkcreatetasks-does-not-require-an-explicit-owner-principal-from-the-csv-upload-code-path-and-can-pass-no-owner-specified-to-the-backend-to-default-to-the-caller",
+      "featureTitle": "Update the frontend bulk-create React Query hook typing and payload shape (frontend/src/hooks/useQueries.ts) so that bulkCreateTasks does not require an explicit owner Principal from the CSV upload code path, and can pass \"no owner specified\" to the backend to default to the caller.",
+      "files": [
+        "frontend/src/components/BulkUploadSection.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-32"
       ],
       "confidence": "high"
     }

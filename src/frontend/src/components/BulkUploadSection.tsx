@@ -1,10 +1,10 @@
 import { useState, useRef } from 'react';
-import { useBulkCreateTasks, useListAllUsers } from '../hooks/useQueries';
+import { useBulkCreateTasks } from '../hooks/useQueries';
+import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Upload, Download, FileSpreadsheet, AlertCircle } from 'lucide-react';
-import { Principal } from '@dfinity/principal';
 import { toast } from 'sonner';
 
 export default function BulkUploadSection() {
@@ -12,7 +12,7 @@ export default function BulkUploadSection() {
   const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bulkCreateTasks = useBulkCreateTasks();
-  const { data: users = [] } = useListAllUsers();
+  const { identity } = useInternetIdentity();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -50,9 +50,37 @@ export default function BulkUploadSection() {
     });
   };
 
+  const parseDateToTimestamp = (dateStr: string): bigint => {
+    if (!dateStr || dateStr.trim() === '') return BigInt(0);
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return BigInt(0);
+      return BigInt(date.getTime() * 1000000);
+    } catch {
+      return BigInt(0);
+    }
+  };
+
+  const parseAmount = (amountStr: string): bigint => {
+    if (!amountStr || amountStr.trim() === '') return BigInt(0);
+    try {
+      const cleaned = amountStr.replace(/[^0-9.]/g, '');
+      const num = parseFloat(cleaned);
+      if (isNaN(num)) return BigInt(0);
+      return BigInt(Math.floor(num));
+    } catch {
+      return BigInt(0);
+    }
+  };
+
   const handleUpload = async () => {
     if (!file) {
       toast.error('Please select a file first');
+      return;
+    }
+
+    if (!identity) {
+      toast.error('Please log in to upload tasks');
       return;
     }
 
@@ -69,50 +97,68 @@ export default function BulkUploadSection() {
       }
 
       const header = rows[0].map((h) => h.toLowerCase().trim());
-      const clientIndex = header.findIndex((h) => h.includes('client'));
-      const categoryIndex = header.findIndex((h) => h.includes('category') && !h.includes('sub'));
-      const subCategoryIndex = header.findIndex((h) => h.includes('sub'));
-      const statusIndex = header.findIndex((h) => h.includes('status') && !h.includes('payment'));
-      const paymentIndex = header.findIndex((h) => h.includes('payment'));
-      const assigneeIndex = header.findIndex((h) => h.includes('assignee'));
-      const captainIndex = header.findIndex((h) => h.includes('captain'));
+      
+      // Required columns (case-insensitive)
+      const clientIndex = header.findIndex((h) => h === 'client name');
+      const categoryIndex = header.findIndex((h) => h === 'task category');
+      const subCategoryIndex = header.findIndex((h) => h === 'sub category');
+      
+      // Optional columns
+      const statusIndex = header.findIndex((h) => h === 'status');
+      const commentIndex = header.findIndex((h) => h === 'comment');
+      const assigneeIndex = header.findIndex((h) => h === 'assigned name');
+      const dueDateIndex = header.findIndex((h) => h === 'due date');
+      const assignmentDateIndex = header.findIndex((h) => h === 'assignment date');
+      const completionDateIndex = header.findIndex((h) => h === 'completion date');
+      const billIndex = header.findIndex((h) => h === 'bill');
+      const advanceIndex = header.findIndex((h) => h === 'advance received');
+      const outstandingIndex = header.findIndex((h) => h === 'outstanding amount');
+      const paymentIndex = header.findIndex((h) => h === 'payment status');
 
-      if (clientIndex === -1 || categoryIndex === -1 || subCategoryIndex === -1) {
-        toast.error('CSV must contain Client, Category, and Sub Category columns');
+      // Validate required columns
+      const missingColumns: string[] = [];
+      if (clientIndex === -1) missingColumns.push('Client Name');
+      if (categoryIndex === -1) missingColumns.push('Task Category');
+      if (subCategoryIndex === -1) missingColumns.push('Sub Category');
+
+      if (missingColumns.length > 0) {
+        toast.error(`Missing required columns: ${missingColumns.join(', ')}`);
         setIsProcessing(false);
         return;
       }
 
-      if (assigneeIndex === -1 || captainIndex === -1) {
-        toast.error('CSV must contain Assignee Name and Captain Name columns');
-        setIsProcessing(false);
-        return;
-      }
+      // Get the current user's principal to assign as owner
+      const ownerPrincipal = identity.getPrincipal();
 
-      const tasksData: Array<[Principal, string, string, string, string, string, string, string]> = [];
+      const tasksData: Array<[typeof ownerPrincipal, string, string, string, string, string, string, string, string, bigint, bigint, bigint, bigint, bigint, bigint]> = [];
 
       for (let i = 1; i < rows.length; i++) {
         const row = rows[i];
-        if (row.length < Math.max(clientIndex, categoryIndex, subCategoryIndex, assigneeIndex, captainIndex) + 1) {
-          continue;
-        }
+        if (row.length < 3) continue;
 
         const client = row[clientIndex]?.trim() || '';
         const category = row[categoryIndex]?.trim() || '';
         const subCategory = row[subCategoryIndex]?.trim() || '';
-        const status = statusIndex !== -1 ? row[statusIndex]?.trim() || 'Pending' : 'Pending';
-        const paymentStatus = paymentIndex !== -1 ? row[paymentIndex]?.trim() || 'Unpaid' : 'Unpaid';
-        const assigneeName = row[assigneeIndex]?.trim() || '';
-        const captainName = row[captainIndex]?.trim() || '';
 
+        // Skip rows without required fields
         if (!client || !category || !subCategory) {
           continue;
         }
 
-        // Use the first user as owner, or anonymous if no users exist
-        const ownerPrincipal = users.length > 0 
-          ? Principal.fromText(`user-0`)
-          : Principal.anonymous();
+        // Optional fields with defaults
+        const status = statusIndex !== -1 ? row[statusIndex]?.trim() || 'Pending' : 'Pending';
+        const comment = commentIndex !== -1 ? row[commentIndex]?.trim() || '' : '';
+        const assigneeName = assigneeIndex !== -1 ? row[assigneeIndex]?.trim() || '' : '';
+        const captainName = ''; // Not in new template, default to empty
+        const paymentStatus = paymentIndex !== -1 ? row[paymentIndex]?.trim() || 'Unpaid' : 'Unpaid';
+        
+        const dueDate = dueDateIndex !== -1 ? parseDateToTimestamp(row[dueDateIndex]) : BigInt(0);
+        const assignmentDate = assignmentDateIndex !== -1 ? parseDateToTimestamp(row[assignmentDateIndex]) : BigInt(0);
+        const completionDate = completionDateIndex !== -1 ? parseDateToTimestamp(row[completionDateIndex]) : BigInt(0);
+        
+        const bill = billIndex !== -1 ? parseAmount(row[billIndex]) : BigInt(0);
+        const advanceReceived = advanceIndex !== -1 ? parseAmount(row[advanceIndex]) : BigInt(0);
+        const outstandingAmount = outstandingIndex !== -1 ? parseAmount(row[outstandingIndex]) : BigInt(0);
 
         tasksData.push([
           ownerPrincipal,
@@ -123,11 +169,18 @@ export default function BulkUploadSection() {
           paymentStatus,
           assigneeName,
           captainName,
+          comment,
+          dueDate,
+          assignmentDate,
+          completionDate,
+          bill,
+          advanceReceived,
+          outstandingAmount,
         ]);
       }
 
       if (tasksData.length === 0) {
-        toast.error('No valid tasks found in the file');
+        toast.error('No valid tasks found in the file. Please check that required columns (Client Name, Task Category, Sub Category) have values.');
         setIsProcessing(false);
         return;
       }
@@ -138,18 +191,20 @@ export default function BulkUploadSection() {
         fileInputRef.current.value = '';
       }
       toast.success(`Successfully uploaded ${tasksData.length} tasks`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Upload error:', error);
-      toast.error('Failed to upload tasks. Please check your file format.');
+      const errorMessage = error.message || 'Failed to upload tasks. Please check your file format.';
+      toast.error(errorMessage);
     } finally {
       setIsProcessing(false);
     }
   };
 
   const downloadTemplate = () => {
-    const csvContent = 'Client,Category,Sub Category,Status,Payment Status,Assignee Name,Captain Name\n' +
-      'Example Client,Design,Logo Design,In Progress,Paid,John Doe,Jane Smith\n' +
-      'Another Client,Development,Web Development,Pending,Unpaid,Bob Wilson,Alice Johnson';
+    const csvContent = 
+      'Client Name,Task Category,Sub Category,Status,Comment,Assigned Name,Due Date,Assignment Date,Completion Date,Bill,Advance Received,Outstanding Amount,Payment Status\n' +
+      'ABC Corp,Design,Logo Design,In Progress,Initial draft completed,John Doe,2026-03-15,2026-02-01,2026-03-10,5000,2000,3000,Partially Paid\n' +
+      'XYZ Ltd,Development,Web Development,Pending,Waiting for requirements,Jane Smith,2026-04-01,2026-02-14,,10000,0,10000,Unpaid';
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
@@ -173,8 +228,9 @@ export default function BulkUploadSection() {
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Your CSV file must include the following columns: Client, Category, Sub Category, Assignee Name, and Captain Name.
-              Status and Payment Status are optional (defaults: Pending, Unpaid).
+              <strong>Required columns:</strong> Client Name, Task Category, Sub Category<br />
+              <strong>Optional columns:</strong> Status (default: Pending), Comment, Assigned Name, Due Date, Assignment Date, Completion Date, Bill, Advance Received, Outstanding Amount, Payment Status (default: Unpaid)<br />
+              <strong>Date format:</strong> YYYY-MM-DD or MM/DD/YYYY
             </AlertDescription>
           </Alert>
 

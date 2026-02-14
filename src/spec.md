@@ -1,11 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Make the Dashboard task list dialog (TaskDetailDialog) substantially larger on desktop while staying responsive on smaller screens.
+**Goal:** Fix Bulk Task Upload so it no longer generates/sends an invalid `ownerPrincipal` from CSV values and instead lets bulk-uploaded tasks default to being owned by the currently authenticated uploader (matching single-task creation).
 
 **Planned changes:**
-- Update the Dashboard TaskDetailDialog composition to use larger, viewport-relative width/height on desktop (e.g., via DialogContent className overrides) while constraining to the viewport on smaller screens.
-- Ensure the task list/table area inside the dialog scrolls appropriately (vertical and, if needed, horizontal) so key columns (e.g., Assignee, Captain, Actions) remain accessible without clipping.
-- Keep Shadcn UI component source files unchanged; apply sizing only in app-owned components (e.g., frontend/src/components/TaskDetailDialog.tsx and related callers).
+- Update `frontend/src/components/BulkUploadSection.tsx` to stop deriving ownership from CSV/user list and to stop constructing/sending any `ownerPrincipal` (including removing any `Principal.fromText(...)` usage on CSV-derived/placeholder values).
+- Refactor bulk upload to keep the existing CSV column parsing/validation and template behavior unchanged, while omitting owner so the backend defaults ownership to the caller.
+- Update `frontend/src/hooks/useQueries.ts` bulk-create mutation typing/payload so `bulkCreateTasks` does not require an explicit owner Principal per task (allow omitted/null owner) and keep existing English success/error toasts.
 
-**User-visible outcome:** When opening Dashboard dialogs like “All Categories” (and other task list dialogs opened from filters/chart clicks), the window is noticeably wider and taller on desktop and remains usable and non-overflowing on smaller screens.
+**User-visible outcome:** Uploading a CSV in Bulk Task Upload no longer shows a Principal checksum error (e.g., referencing `user-0` / `aaaaa-aa`), and the uploaded tasks are successfully created under the currently signed-in uploader’s ownership.

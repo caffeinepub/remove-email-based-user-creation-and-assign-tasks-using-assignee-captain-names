@@ -30,11 +30,18 @@ export interface Task {
   'client' : string,
   'subCategory' : string,
   'paymentStatus' : string,
+  'completionDate' : Time,
   'captainName' : string,
+  'assignmentDate' : Time,
   'owner' : Principal,
+  'bill' : bigint,
+  'advanceReceived' : bigint,
   'createdAt' : Time,
   'assigneeName' : string,
+  'dueDate' : Time,
+  'comment' : string,
   'updatedAt' : Time,
+  'outstandingAmount' : bigint,
   'taskCategory' : string,
 }
 export interface TaskCategory { 'id' : string, 'name' : string }
@@ -81,7 +88,23 @@ export interface _SERVICE {
   'bulkCreateTasks' : ActorMethod<
     [
       Array<
-        [Principal, string, string, string, string, string, string, string]
+        [
+          Principal,
+          string,
+          string,
+          string,
+          string,
+          string,
+          string,
+          string,
+          string,
+          Time,
+          Time,
+          Time,
+          bigint,
+          bigint,
+          bigint,
+        ]
       >,
     ],
     Array<Task>
@@ -93,7 +116,23 @@ export interface _SERVICE {
   'createPaymentStatus' : ActorMethod<[string], PaymentStatus>,
   'createSubCategory' : ActorMethod<[string, TaskCategory], SubCategory>,
   'createTask' : ActorMethod<
-    [[] | [Principal], string, string, string, string, string, string, string],
+    [
+      [] | [Principal],
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      Time,
+      Time,
+      Time,
+      bigint,
+      bigint,
+      bigint,
+    ],
     Task
   >,
   'createTaskCategory' : ActorMethod<[string], TaskCategory>,
@@ -132,7 +171,23 @@ export interface _SERVICE {
     undefined
   >,
   'updateTask' : ActorMethod<
-    [string, string, string, string, string, string, string, string],
+    [
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      Time,
+      Time,
+      Time,
+      bigint,
+      bigint,
+      bigint,
+    ],
     Task
   >,
 }

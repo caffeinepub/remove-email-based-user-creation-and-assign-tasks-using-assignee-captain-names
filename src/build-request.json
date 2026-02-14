@@ -1,38 +1,86 @@
 {
   "kind": "build_request",
-  "title": "Increase size of the Dashboard task list dialog window",
-  "priority": "normal",
+  "title": "Fix bulk task CSV upload to stop sending invalid ownerPrincipal and assign tasks to current uploader",
+  "priority": "high",
   "requirements": [
     {
-      "id": "REQ-23",
-      "text": "Increase the size (width + height) of the Dashboard modal window shown in the screenshot (the TaskDetailDialog used for \"All Categories\" / \"All Statuses\" / \"All Payment Types\" and chart-click task lists) so it uses substantially more of the viewport on desktop while remaining responsive on smaller screens.",
+      "id": "REQ-30",
+      "text": "Update the Bulk Task Upload flow to stop converting any CSV value (e.g., \"user-0\") into a Principal ID, and instead assign bulk-uploaded tasks to the currently authenticated uploader (matching single-task creation behavior).",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-6"
+          "recent-messages"
         ],
         "quotes": [
-          "make this window large"
+          "Principal \"aaaaa-aa\" does not have a valid checksum (original value \"user-0\")",
+          "Should bulk-uploaded tasks always be assigned to the current admin uploading the CSV? (That’s how your single-task creation works right now.)",
+          "User: yes"
         ]
       },
       "acceptanceCriteria": [
-        "When opening the Dashboard summary card dialog titled \"All Categories\" (Dashboard > Categories card), the dialog content area is noticeably larger than before (wider and taller) on desktop screens.",
-        "The dialog remains responsive on small screens (e.g., uses viewport-relative sizing and does not overflow the viewport).",
-        "The task list content remains usable at the larger size: the table area scrolls (vertically and, if needed, horizontally) without clipping important columns (e.g., Assignee, Captain, Actions).",
-        "No changes are made to read-only Shadcn UI component sources under frontend/src/components/ui; sizing is applied via composition (e.g., DialogContent className) in app components such as frontend/src/components/TaskDetailDialog.tsx."
+        "Uploading a CSV using the Bulk Task Upload UI no longer throws a Principal checksum error mentioning \"user-0\" or \"aaaaa-aa\".",
+        "Bulk-uploaded tasks are created successfully and are owned by (i.e., visible under) the currently signed-in uploader, consistent with single-task creation when owner is not specified.",
+        "The bulk upload implementation does not call Principal.fromText(...) on any CSV-derived value."
+      ]
+    },
+    {
+      "id": "REQ-31",
+      "text": "Refactor frontend BulkUploadSection to remove dependencies on the user list for determining ownership, and remove any hardcoded/placeholder principal generation used during bulk upload.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "recent-messages"
+        ],
+        "quotes": [
+          "Only one thing must be fixed: I need to update the bulk upload frontend code so that it no longer sends anything called ownerPrincipal during upload."
+        ]
+      },
+      "acceptanceCriteria": [
+        "frontend/src/components/BulkUploadSection.tsx no longer imports or uses useListAllUsers for bulk upload ownership.",
+        "frontend/src/components/BulkUploadSection.tsx no longer constructs an ownerPrincipal using `Principal.fromText('user-0')` (or any similar placeholder).",
+        "Bulk upload continues to parse/validate the existing required/optional columns as currently displayed in the UI."
+      ]
+    },
+    {
+      "id": "REQ-32",
+      "text": "Update the frontend bulk-create React Query hook typing and payload shape (frontend/src/hooks/useQueries.ts) so that bulkCreateTasks does not require an explicit owner Principal from the CSV upload code path, and can pass \"no owner specified\" to the backend to default to the caller.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "recent-messages"
+        ],
+        "quotes": [
+          "Should bulk-uploaded tasks always be assigned to the current admin uploading the CSV? (That’s how your single-task creation works right now.)"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The `useBulkCreateTasks` mutation in frontend/src/hooks/useQueries.ts supports a payload that does not require an explicit owner Principal for each task (e.g., allows null/omitted owner value) so the backend can default to the caller.",
+        "TypeScript builds without errors after updating the bulk upload payload typing and usage.",
+        "Bulk upload success and error toasts remain in English (e.g., \"Successfully uploaded X tasks\" / readable error messages)."
       ]
     }
   ],
   "constraints": [
-    "Do not modify any files under frontend/src/components/ui (read-only UI component sources); apply dialog sizing via component composition and className overrides in app-owned components.",
-    "Use English for any user-facing text."
+    "Do not modify any files under frontend/src/components/ui (Shadcn components are read-only).",
+    "Do not modify immutable frontend paths listed in SYSTEM_CONTEXT (e.g., frontend/src/hooks/useInternetIdentity.ts(x), frontend/src/hooks/useActor.ts, frontend/src/main.tsx)."
   ],
   "nonGoals": [
-    "Redesigning the Dashboard charts or changing task filtering behavior.",
-    "Changing backend APIs or data models."
+    "Do not require any changes to the user’s CSV file format to resolve this issue.",
+    "Do not add or reintroduce any admin UI for creating users via email or principal ID.",
+    "Do not change the Bulk Task Upload template headers/order beyond what is already implemented."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

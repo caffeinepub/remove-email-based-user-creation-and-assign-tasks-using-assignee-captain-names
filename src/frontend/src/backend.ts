@@ -116,11 +116,18 @@ export interface Task {
     client: string;
     subCategory: string;
     paymentStatus: string;
+    completionDate: Time;
     captainName: string;
+    assignmentDate: Time;
     owner: Principal;
+    bill: bigint;
+    advanceReceived: bigint;
     createdAt: Time;
     assigneeName: string;
+    dueDate: Time;
+    comment: string;
     updatedAt: Time;
+    outstandingAmount: bigint;
     taskCategory: string;
 }
 export interface _CaffeineStorageCreateCertificateResult {
@@ -159,11 +166,11 @@ export interface backendInterface {
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
     addAssigneeCaptainPair(input: AssigneeCaptainInput): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
-    bulkCreateTasks(tasksData: Array<[Principal, string, string, string, string, string, string, string]>): Promise<Array<Task>>;
+    bulkCreateTasks(tasksData: Array<[Principal, string, string, string, string, string, string, string, string, Time, Time, Time, bigint, bigint, bigint]>): Promise<Array<Task>>;
     bulkUpdateAssigneeCaptainPairs(pairs: Array<AssigneeCaptainInput>): Promise<void>;
     createPaymentStatus(name: string): Promise<PaymentStatus>;
     createSubCategory(name: string, category: TaskCategory): Promise<SubCategory>;
-    createTask(ownerPrincipal: Principal | null, client: string, taskCategory: string, subCategory: string, status: string, paymentStatus: string, assigneeName: string, captainName: string): Promise<Task>;
+    createTask(ownerPrincipal: Principal | null, client: string, taskCategory: string, subCategory: string, status: string, paymentStatus: string, assigneeName: string, captainName: string, comment: string, dueDate: Time, assignmentDate: Time, completionDate: Time, bill: bigint, advanceReceived: bigint, outstandingAmount: bigint): Promise<Task>;
     createTaskCategory(name: string): Promise<TaskCategory>;
     createTaskStatus(name: string): Promise<TaskStatus>;
     createUser(userPrincipal: Principal, name: string, email: string): Promise<UserProfile>;
@@ -196,7 +203,7 @@ export interface backendInterface {
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     setUserRole(user: Principal, role: UserRole): Promise<void>;
     updateAssigneeCaptainPair(assignee: string, update: AssigneeCaptainUpdate): Promise<void>;
-    updateTask(taskId: string, client: string, taskCategory: string, subCategory: string, status: string, paymentStatus: string, assigneeName: string, captainName: string): Promise<Task>;
+    updateTask(taskId: string, client: string, taskCategory: string, subCategory: string, status: string, paymentStatus: string, assigneeName: string, captainName: string, comment: string, dueDate: Time, assignmentDate: Time, completionDate: Time, bill: bigint, advanceReceived: bigint, outstandingAmount: bigint): Promise<Task>;
 }
 import type { Task as _Task, UserProfile as _UserProfile, UserRole as _UserRole, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
@@ -327,7 +334,7 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async bulkCreateTasks(arg0: Array<[Principal, string, string, string, string, string, string, string]>): Promise<Array<Task>> {
+    async bulkCreateTasks(arg0: Array<[Principal, string, string, string, string, string, string, string, string, Time, Time, Time, bigint, bigint, bigint]>): Promise<Array<Task>> {
         if (this.processError) {
             try {
                 const result = await this.actor.bulkCreateTasks(arg0);
@@ -383,17 +390,17 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async createTask(arg0: Principal | null, arg1: string, arg2: string, arg3: string, arg4: string, arg5: string, arg6: string, arg7: string): Promise<Task> {
+    async createTask(arg0: Principal | null, arg1: string, arg2: string, arg3: string, arg4: string, arg5: string, arg6: string, arg7: string, arg8: string, arg9: Time, arg10: Time, arg11: Time, arg12: bigint, arg13: bigint, arg14: bigint): Promise<Task> {
         if (this.processError) {
             try {
-                const result = await this.actor.createTask(to_candid_opt_n10(this._uploadFile, this._downloadFile, arg0), arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+                const result = await this.actor.createTask(to_candid_opt_n10(this._uploadFile, this._downloadFile, arg0), arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.createTask(to_candid_opt_n10(this._uploadFile, this._downloadFile, arg0), arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+            const result = await this.actor.createTask(to_candid_opt_n10(this._uploadFile, this._downloadFile, arg0), arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14);
             return result;
         }
     }
@@ -845,17 +852,17 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async updateTask(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string, arg5: string, arg6: string, arg7: string): Promise<Task> {
+    async updateTask(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string, arg5: string, arg6: string, arg7: string, arg8: string, arg9: Time, arg10: Time, arg11: Time, arg12: bigint, arg13: bigint, arg14: bigint): Promise<Task> {
         if (this.processError) {
             try {
-                const result = await this.actor.updateTask(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+                const result = await this.actor.updateTask(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.updateTask(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+            const result = await this.actor.updateTask(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14);
             return result;
         }
     }
