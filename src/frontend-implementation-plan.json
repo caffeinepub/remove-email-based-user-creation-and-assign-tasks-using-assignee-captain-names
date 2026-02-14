@@ -1,58 +1,75 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix bulk CSV task upload ownership to default to current uploader",
+  "title": "Dashboard drill-down for All Tasks, revenue KPI, and revenue columns",
   "requirements": [
     {
-      "id": "REQ-30",
-      "summary": "Update Bulk Task Upload to stop converting CSV values into Principals and instead rely on backend default ownership (current uploader).",
+      "id": "REQ-33",
+      "summary": "Make the Dashboard \"Total Tasks\" KPI card clickable to open the existing TaskDetailDialog with all tasks loaded by useGetTasks().",
       "acceptanceCriteria": [
-        "Uploading a CSV using the Bulk Task Upload UI no longer throws a Principal checksum error mentioning \"user-0\" or \"aaaaa-aa\".",
-        "Bulk-uploaded tasks are created successfully and are owned by (i.e., visible under) the currently signed-in uploader, consistent with single-task creation when owner is not specified.",
-        "The bulk upload implementation does not call Principal.fromText(...) on any CSV-derived value."
+        "On the Dashboard, clicking the \"Total Tasks\" card opens the TaskDetailDialog.",
+        "The dialog title/description clearly indicates it is showing all tasks (English text).",
+        "The dialog shows the full list of tasks currently returned by useGetTasks(), and row click still opens the task details tab as it does today."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/BulkUploadSection.tsx",
+          "path": "frontend/src/pages/Dashboard.tsx",
           "operation": "modify",
-          "description": "Remove placeholder owner principal creation and stop sending an ownerPrincipal derived from any CSV/user-list value; build the bulk upload payload so each row indicates \"no owner specified\" (e.g., null) and let the backend assign ownership to the authenticated uploader."
-        }
-      ]
-    },
-    {
-      "id": "REQ-31",
-      "summary": "Refactor BulkUploadSection to remove user-list ownership dependency and any hardcoded/placeholder principal generation while keeping current CSV parsing/validation behavior.",
-      "acceptanceCriteria": [
-        "frontend/src/components/BulkUploadSection.tsx no longer imports or uses useListAllUsers for bulk upload ownership.",
-        "frontend/src/components/BulkUploadSection.tsx no longer constructs an ownerPrincipal using `Principal.fromText('user-0')` (or any similar placeholder).",
-        "Bulk upload continues to parse/validate the existing required/optional columns as currently displayed in the UI."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/BulkUploadSection.tsx",
-          "operation": "modify",
-          "description": "Remove useListAllUsers import/usage and delete any hardcoded Principal generation (including Principal.fromText('user-0') and Principal.anonymous() for ownership); keep the same header detection, required/optional column handling, and row filtering as currently implemented."
-        }
-      ]
-    },
-    {
-      "id": "REQ-32",
-      "summary": "Adjust React Query bulkCreateTasks typing/payload so Bulk Upload can omit per-task owner and rely on backend default-to-caller behavior.",
-      "acceptanceCriteria": [
-        "The `useBulkCreateTasks` mutation in frontend/src/hooks/useQueries.ts supports a payload that does not require an explicit owner Principal for each task (e.g., allows null/omitted owner value) so the backend can default to the caller.",
-        "TypeScript builds without errors after updating the bulk upload payload typing and usage.",
-        "Bulk upload success and error toasts remain in English (e.g., \"Successfully uploaded X tasks\" / readable error messages)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Update useBulkCreateTasks mutation input typing and actor-call wiring so bulkCreateTasks can be called with tasks that have \"no owner specified\" (e.g., first tuple element typed as Principal | null, or a new input shape without owner that the hook maps to the backend call), enabling backend default ownership to the authenticated caller; ensure existing error handling continues to surface readable English toast messages."
+          "description": "Update the \"Total Tasks\" Card to match the existing clickable summary-card behavior (cursor/hover styling and onClick). On click, open TaskDetailDialog with the full tasks list from useGetTasks(), and set an English title/description indicating it is showing all tasks."
         },
         {
-          "path": "frontend/src/components/BulkUploadSection.tsx",
+          "path": "frontend/src/components/TaskDetailDialog.tsx",
           "operation": "modify",
-          "description": "Align the Bulk Upload tasksData construction to the updated useBulkCreateTasks payload shape so it never requires/sends an explicit owner principal from the CSV path while preserving existing success/error toast messaging in English."
+          "description": "Confirm TaskDetailDialog list-tab behavior remains unchanged for the all-tasks case (shows provided tasks prop and row click still calls openTaskTab), adjusting only as needed to support the updated Dashboard drill-down."
+        }
+      ]
+    },
+    {
+      "id": "REQ-34",
+      "summary": "Add revenue reporting: a Dashboard \"Total Revenue\" KPI computed from task.bill and a Revenue column in the Dashboard TaskDetailDialog task list, formatted as en-US currency.",
+      "acceptanceCriteria": [
+        "Dashboard shows a new KPI card labeled \"Total Revenue\" with the sum of bill across tasks (English text).",
+        "If there are no tasks, \"Total Revenue\" displays $0.00 (or equivalent zero currency formatting).",
+        "TaskDetailDialog’s task list table includes a \"Revenue\" column populated from task.bill for each row.",
+        "Revenue values are displayed in a consistent English/US currency format (e.g., $1,234.00).",
+        "No backend API changes are required for the revenue display; values come from the existing Task fields returned by getTasks/filter APIs."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/utils/currency.ts",
+          "operation": "create",
+          "description": "Add a small currency-formatting helper for consistent en-US currency display (e.g., formatting bigint/number values like task.bill and total sums)."
+        },
+        {
+          "path": "frontend/src/pages/Dashboard.tsx",
+          "operation": "modify",
+          "description": "Compute Total Revenue as the sum of task.bill across the currently loaded tasks from useGetTasks(), format it as en-US currency, and render a new KPI Card labeled \"Total Revenue\". Ensure the zero-tasks case renders $0.00. Adjust the KPI grid layout as needed to accommodate the additional card without breaking existing cards."
+        },
+        {
+          "path": "frontend/src/components/TaskDetailDialog.tsx",
+          "operation": "modify",
+          "description": "Add a \"Revenue\" column to the task list table in the dialog (list tab) using task.bill as the source and formatting via the shared currency helper. Keep existing row click behavior intact."
+        },
+        {
+          "path": "frontend/src/pages/TasksPage.tsx",
+          "operation": "modify",
+          "description": "Update the main Tasks list table to include a \"Revenue\" (Bill) column formatted as en-US currency using the shared currency helper, so task list views consistently show revenue."
+        }
+      ]
+    },
+    {
+      "id": "REQ-35",
+      "summary": "Preserve existing Payment Status Distribution rendering and payment-status drill-down to TaskDetailDialog after Dashboard updates.",
+      "acceptanceCriteria": [
+        "Payment Status chart still renders on the Dashboard when payment status data exists.",
+        "Clicking any payment status bar/segment still opens the TaskDetailDialog with the correct filtered task list.",
+        "If the payment-status filter query fails, the dialog shows an English error description (existing behavior is acceptable)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/Dashboard.tsx",
+          "operation": "modify",
+          "description": "While adding the clickable Total Tasks card and Total Revenue KPI, ensure the existing Payment Status Distribution visualization and its click handler remain wired to the current filter-by-payment-status flow and continue to open TaskDetailDialog with filtered tasks; preserve existing error description behavior on failures."
         }
       ]
     }

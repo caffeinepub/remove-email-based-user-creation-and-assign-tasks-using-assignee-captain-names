@@ -5,8 +5,8 @@
   "frontend/src/components/Footer.tsx": "Simple footer component with copyright and caffeine.ai attribution.",
   "frontend/src/components/ProfileSetupModal.tsx": "Modal dialog for first-time user profile setup requiring name and email input.",
   "frontend/src/components/AccessDeniedScreen.tsx": "Full-screen authentication gate showing login button for unauthenticated users.",
-  "frontend/src/pages/Dashboard.tsx": "Analytics dashboard with interactive summary cards and charts that use backend filter mutations to fetch and display filtered task lists with tabbed task details and real-time task update handling.",
-  "frontend/src/pages/TasksPage.tsx": "Task management page with tabbed interface supporting multiple concurrent task detail views, filtering, search, and click-to-open navigation with proper event handling.",
+  "frontend/src/pages/Dashboard.tsx": "Analytics dashboard with interactive summary cards including clickable Total Tasks and Total Revenue KPI, charts for category/status/payment distribution, and drill-down functionality to TaskDetailDialog with filtered task lists.",
+  "frontend/src/pages/TasksPage.tsx": "Task management page with tabbed interface supporting multiple concurrent task detail views, filtering, search, and click-to-open navigation, now including a Revenue column in the task list table.",
   "frontend/src/pages/AdminPage.tsx": "Admin panel with three tabs (Upload, Settings, Assignees) for bulk upload, category management, and assignee directory management.",
   "frontend/src/components/TaskFormDialog.tsx": "Task creation/editing dialog extended with inputs for all new fields including comment textarea, date pickers for due/assignment/completion dates, and numeric inputs for bill/advance/outstanding amounts with proper timestamp conversion and form validation.",
   "frontend/src/components/BulkUploadSection.tsx": "CSV bulk upload component that assigns all uploaded tasks to the currently authenticated user (admin) by using their Internet Identity principal, with proper validation, date/amount parsing, and error handling for all task fields.",
@@ -14,7 +14,7 @@
   "frontend/src/components/UserManagement.tsx": "Admin interface for creating, listing, and managing users with role assignment functionality, displaying user roles with badges and dropdown selectors to change roles between admin and user, plus delete capability.",
   "frontend/src/index.css": "Custom OKLCH color system with blue-themed palette for light and dark modes with enhanced contrast and modern design tokens.",
   "frontend/src/components/AdminTaskDialog.tsx": "Admin-only task creation dialog extended with all new task fields (comment, dates, financial amounts) with proper validation, date conversion, and assignee directory integration.",
-  "frontend/src/components/TaskDetailDialog.tsx": "Dialog component displaying filtered task lists with tabbed interface for viewing individual task details, now with significantly larger viewport-relative sizing (95vw × 92vh on desktop) and improved flex-column layout ensuring proper scrolling for both task list table and detail tabs with horizontal overflow support for all columns.",
+  "frontend/src/components/TaskDetailDialog.tsx": "Dialog component displaying filtered task lists with tabbed interface for viewing individual task details, now including a Revenue column formatted as US currency in the task list table.",
   "frontend/src/components/AssigneeDirectoryManagement.tsx": "Admin component for managing assignee/captain directory with bulk CSV import, template download, tabbed detail views, and full CRUD operations.",
   "frontend/src/utils/assigneeCsv.ts": "Utility functions for generating CSV templates and parsing CSV files for assignee/captain bulk import with validation and error handling.",
   "frontend/src/components/TaskDetailsTab.tsx": "Task details view component displaying all task fields including new financial details card (bill, advance, outstanding), expanded timeline with due/assignment/completion dates, and comment section with proper formatting for empty/zero values.",
@@ -24,5 +24,6 @@
   "frontend/src/components/AppBootstrap.tsx": "Bootstrap component managing authenticated app initialization with explicit error states, retry actions, and proper logging for Internet Identity, actor creation, profile, and admin queries using correct status type checking.",
   "frontend/src/components/AppLoadErrorScreen.tsx": "User-facing error screen component displaying clear English error messages with reload and retry actions without exposing sensitive details like tokens or stack traces.",
   "frontend/src/components/RuntimeErrorBoundary.tsx": "React error boundary component that catches runtime errors and renders AppLoadErrorScreen fallback while logging redacted diagnostics to console.",
-  "frontend/src/utils/diagnostics.ts": "Production-safe diagnostics utility for logging initialization failures with automatic redaction of sensitive values like caffeineAdminToken and clear English step labels."
+  "frontend/src/utils/diagnostics.ts": "Production-safe diagnostics utility for logging initialization failures with automatic redaction of sensitive values like caffeineAdminToken and clear English step labels.",
+  "frontend/src/utils/currency.ts": "Currency formatting utility that converts bigint or number values to US dollar format with proper locale formatting."
 }

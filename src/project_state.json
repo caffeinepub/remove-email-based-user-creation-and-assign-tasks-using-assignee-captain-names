@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 19,
+  "projectStateVersion": 21,
   "summary": "Task assignment app should not require creating users with email; tasks should be assigned using assignee name and their captain only.",
   "architectural_notes": [
     "Do not require user account creation via email; represent assignees by name and captain for task assignment.",
@@ -12,7 +12,7 @@
     "Bulk task CSV upload fails when user-provided column headers do not exactly match the app’s expected template headers; needs template/header alignment.",
     "Bulk task CSV upload fails with Principal checksum error (e.g., Principal \"aaaaa-aa\" invalid checksum from \"user-0\") because the frontend upload payload still sends an ownerPrincipal/Principal-derived field."
   ],
-  "isFixRequest": true,
+  "isFixRequest": false,
   "existing_features": [
     {
       "id": "feature-remove-the-admin-create-new-user-and-user-list-role-management-ui-so-admins-are-no-longer-prompted-to-create-users-using-email-or-principal-id",
@@ -205,6 +205,30 @@
         "REQ-32"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-update-the-dashboard-frontend-src-pages-dashboard-tsx-so-the-total-tasks-summary-card-is-clickable-and-opens-the-existing-taskdetaildialog-showing-all-tasks-same-behavior-as-the-existing-clickable-summary-cards-for-categories-statuses-payment-types",
+      "title": "Update the Dashboard (frontend/src/pages/Dashboard.tsx) so the \"Total Tasks\" summary card is clickable and opens the existing TaskDetailDialog showing all tasks (same behavior as the existing clickable summary cards for Categories/Statuses/Payment Types).",
+      "reqIds": [
+        "REQ-33"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-revenue-reporting-to-the-dashboard-and-task-list-views-using-existing-task-financial-fields-specifically-1-add-a-new-dashboard-kpi-card-that-displays-total-revenue-computed-as-the-sum-of-task-bill-across-the-currently-loaded-tasks-and-2-update-the-dashboard-task-list-dialog-table-frontend-src-components-taskdetaildialog-tsx-to-include-a-revenue-bill-column-per-task-formatted-as-currency",
+      "title": "Add revenue reporting to the Dashboard and task list views using existing task financial fields. Specifically: (1) add a new Dashboard KPI card that displays \"Total Revenue\" computed as the sum of task.bill across the currently loaded tasks; and (2) update the Dashboard task list dialog table (frontend/src/components/TaskDetailDialog.tsx) to include a \"Revenue\" (Bill) column per task, formatted as currency.",
+      "reqIds": [
+        "REQ-34"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-payment-status-analytics-and-drill-down-remain-intact-after-the-dashboard-updates-the-payment-status-distribution-visualization-must-still-render-and-clicking-a-payment-status-must-still-open-the-taskdetaildialog-pre-filtered-to-tasks-with-that-payment-status",
+      "title": "Ensure the Payment Status analytics and drill-down remain intact after the Dashboard updates: the \"Payment Status Distribution\" visualization must still render, and clicking a payment status must still open the TaskDetailDialog pre-filtered to tasks with that payment status.",
+      "reqIds": [
+        "REQ-35"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -307,6 +331,12 @@
       "summary": "Fix bulk task CSV upload to stop sending ownerPrincipal (e.g., 'user-0'); instead assign bulk-uploaded tasks to the current admin uploader (matching single-task creation).",
       "reqIds": [],
       "status": "in_progress"
+    },
+    {
+      "id": "AR-33",
+      "summary": "Update the dashboard to show all tasks, payment status, and total revenue per task (and/or aggregated totals).",
+      "reqIds": [],
+      "status": "pending"
     }
   ],
   "projectName": "Remove email-based user creation and assign tasks using assignee + captain names",

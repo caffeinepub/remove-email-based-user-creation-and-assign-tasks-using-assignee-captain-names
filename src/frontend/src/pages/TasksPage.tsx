@@ -14,6 +14,7 @@ import TaskDetailsTab from '../components/TaskDetailsTab';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useTaskDetailTabs } from '../hooks/useTaskDetailTabs';
 import type { Task } from '../backend';
+import { formatCurrency } from '../utils/currency';
 
 interface TasksPageProps {
   isAdmin: boolean;
@@ -215,6 +216,7 @@ export default function TasksPage({ isAdmin }: TasksPageProps) {
                         <TableHead>Payment</TableHead>
                         <TableHead>Assignee</TableHead>
                         <TableHead>Captain</TableHead>
+                        <TableHead className="text-right">Revenue</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -236,6 +238,7 @@ export default function TasksPage({ isAdmin }: TasksPageProps) {
                           </TableCell>
                           <TableCell className="text-sm">{task.assigneeName || '-'}</TableCell>
                           <TableCell className="text-sm">{task.captainName || '-'}</TableCell>
+                          <TableCell className="text-right font-medium">{formatCurrency(task.bill)}</TableCell>
                           <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                             <div className="flex justify-end gap-2">
                               <Button

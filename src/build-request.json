@@ -1,86 +1,76 @@
 {
   "kind": "build_request",
-  "title": "Fix bulk task CSV upload to stop sending invalid ownerPrincipal and assign tasks to current uploader",
-  "priority": "high",
+  "title": "Update Dashboard to show All Tasks, Payment Status insights, and Revenue totals",
+  "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-30",
-      "text": "Update the Bulk Task Upload flow to stop converting any CSV value (e.g., \"user-0\") into a Principal ID, and instead assign bulk-uploaded tasks to the currently authenticated uploader (matching single-task creation behavior).",
+      "id": "REQ-33",
+      "text": "Update the Dashboard (frontend/src/pages/Dashboard.tsx) so the \"Total Tasks\" summary card is clickable and opens the existing TaskDetailDialog showing all tasks (same behavior as the existing clickable summary cards for Categories/Statuses/Payment Types).",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "recent-messages"
+          "msg-1"
         ],
         "quotes": [
-          "Principal \"aaaaa-aa\" does not have a valid checksum (original value \"user-0\")",
-          "Should bulk-uploaded tasks always be assigned to the current admin uploading the CSV? (That’s how your single-task creation works right now.)",
-          "User: yes"
+          "update dashboard  all task,payment status and total revenur from each task"
         ]
       },
       "acceptanceCriteria": [
-        "Uploading a CSV using the Bulk Task Upload UI no longer throws a Principal checksum error mentioning \"user-0\" or \"aaaaa-aa\".",
-        "Bulk-uploaded tasks are created successfully and are owned by (i.e., visible under) the currently signed-in uploader, consistent with single-task creation when owner is not specified.",
-        "The bulk upload implementation does not call Principal.fromText(...) on any CSV-derived value."
+        "On the Dashboard, clicking the \"Total Tasks\" card opens the TaskDetailDialog.",
+        "The dialog title/description clearly indicates it is showing all tasks (English text).",
+        "The dialog shows the full list of tasks currently returned by useGetTasks(), and row click still opens the task details tab as it does today."
       ]
     },
     {
-      "id": "REQ-31",
-      "text": "Refactor frontend BulkUploadSection to remove dependencies on the user list for determining ownership, and remove any hardcoded/placeholder principal generation used during bulk upload.",
+      "id": "REQ-34",
+      "text": "Add revenue reporting to the Dashboard and task list views using existing task financial fields. Specifically: (1) add a new Dashboard KPI card that displays \"Total Revenue\" computed as the sum of task.bill across the currently loaded tasks; and (2) update the Dashboard task list dialog table (frontend/src/components/TaskDetailDialog.tsx) to include a \"Revenue\" (Bill) column per task, formatted as currency.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "recent-messages"
+          "msg-1"
         ],
         "quotes": [
-          "Only one thing must be fixed: I need to update the bulk upload frontend code so that it no longer sends anything called ownerPrincipal during upload."
+          "update dashboard  all task,payment status and total revenur from each task"
         ]
       },
       "acceptanceCriteria": [
-        "frontend/src/components/BulkUploadSection.tsx no longer imports or uses useListAllUsers for bulk upload ownership.",
-        "frontend/src/components/BulkUploadSection.tsx no longer constructs an ownerPrincipal using `Principal.fromText('user-0')` (or any similar placeholder).",
-        "Bulk upload continues to parse/validate the existing required/optional columns as currently displayed in the UI."
+        "Dashboard shows a new KPI card labeled \"Total Revenue\" with the sum of bill across tasks (English text).",
+        "If there are no tasks, \"Total Revenue\" displays $0.00 (or equivalent zero currency formatting).",
+        "TaskDetailDialog’s task list table includes a \"Revenue\" column populated from task.bill for each row.",
+        "Revenue values are displayed in a consistent English/US currency format (e.g., $1,234.00).",
+        "No backend API changes are required for the revenue display; values come from the existing Task fields returned by getTasks/filter APIs."
       ]
     },
     {
-      "id": "REQ-32",
-      "text": "Update the frontend bulk-create React Query hook typing and payload shape (frontend/src/hooks/useQueries.ts) so that bulkCreateTasks does not require an explicit owner Principal from the CSV upload code path, and can pass \"no owner specified\" to the backend to default to the caller.",
+      "id": "REQ-35",
+      "text": "Ensure the Payment Status analytics and drill-down remain intact after the Dashboard updates: the \"Payment Status Distribution\" visualization must still render, and clicking a payment status must still open the TaskDetailDialog pre-filtered to tasks with that payment status.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "recent-messages"
+          "msg-1"
         ],
         "quotes": [
-          "Should bulk-uploaded tasks always be assigned to the current admin uploading the CSV? (That’s how your single-task creation works right now.)"
+          "update dashboard  all task,payment status and total revenur from each task"
         ]
       },
       "acceptanceCriteria": [
-        "The `useBulkCreateTasks` mutation in frontend/src/hooks/useQueries.ts supports a payload that does not require an explicit owner Principal for each task (e.g., allows null/omitted owner value) so the backend can default to the caller.",
-        "TypeScript builds without errors after updating the bulk upload payload typing and usage.",
-        "Bulk upload success and error toasts remain in English (e.g., \"Successfully uploaded X tasks\" / readable error messages)."
+        "Payment Status chart still renders on the Dashboard when payment status data exists.",
+        "Clicking any payment status bar/segment still opens the TaskDetailDialog with the correct filtered task list.",
+        "If the payment-status filter query fails, the dialog shows an English error description (existing behavior is acceptable)."
       ]
     }
   ],
   "constraints": [
-    "Do not modify any files under frontend/src/components/ui (Shadcn components are read-only).",
-    "Do not modify immutable frontend paths listed in SYSTEM_CONTEXT (e.g., frontend/src/hooks/useInternetIdentity.ts(x), frontend/src/hooks/useActor.ts, frontend/src/main.tsx)."
+    "Frontend immutable paths must not be edited: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui.",
+    "Backend must remain a single Motoko actor in backend/main.mo; do not introduce additional backend services."
   ],
   "nonGoals": [
-    "Do not require any changes to the user’s CSV file format to resolve this issue.",
-    "Do not add or reintroduce any admin UI for creating users via email or principal ID.",
-    "Do not change the Bulk Task Upload template headers/order beyond what is already implemented."
+    "Do not change the backend Task schema or introduce new backend analytics endpoints for revenue in this request.",
+    "Do not change the existing category/status/payment-status counting logic beyond what is necessary to keep current behavior working.",
+    "Do not implement exports (CSV/PDF) or external integrations for revenue reporting."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

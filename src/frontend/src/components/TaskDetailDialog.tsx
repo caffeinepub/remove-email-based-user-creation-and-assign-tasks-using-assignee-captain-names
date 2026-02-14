@@ -11,6 +11,7 @@ import TaskFormDialog from './TaskFormDialog';
 import TaskDetailsTab from './TaskDetailsTab';
 import { useTaskDetailTabs } from '../hooks/useTaskDetailTabs';
 import { useState } from 'react';
+import { formatCurrency } from '../utils/currency';
 
 interface TaskDetailDialogProps {
   open: boolean;
@@ -68,6 +69,22 @@ export default function TaskDetailDialog({
     return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   };
 
+  const getStatusColor = (status: string) => {
+    const lowerStatus = status.toLowerCase();
+    if (lowerStatus.includes('complete') || lowerStatus.includes('done')) return 'default';
+    if (lowerStatus.includes('progress') || lowerStatus.includes('active')) return 'secondary';
+    if (lowerStatus.includes('pending') || lowerStatus.includes('waiting')) return 'outline';
+    return 'outline';
+  };
+
+  const getPaymentColor = (payment: string) => {
+    const lowerPayment = payment.toLowerCase();
+    if (lowerPayment.includes('paid') || lowerPayment.includes('complete')) return 'default';
+    if (lowerPayment.includes('pending') || lowerPayment.includes('processing')) return 'secondary';
+    if (lowerPayment.includes('unpaid') || lowerPayment.includes('overdue')) return 'destructive';
+    return 'outline';
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -114,45 +131,39 @@ export default function TaskDetailDialog({
                           <TableRow>
                             <TableHead className="min-w-[150px]">Client</TableHead>
                             <TableHead className="min-w-[120px]">Category</TableHead>
-                            <TableHead className="min-w-[140px]">Sub Category</TableHead>
-                            <TableHead className="min-w-[120px]">Status</TableHead>
-                            <TableHead className="min-w-[140px]">Payment Status</TableHead>
+                            <TableHead className="min-w-[120px]">Sub Category</TableHead>
+                            <TableHead className="min-w-[100px]">Status</TableHead>
+                            <TableHead className="min-w-[120px]">Payment</TableHead>
                             <TableHead className="min-w-[120px]">Assignee</TableHead>
                             <TableHead className="min-w-[120px]">Captain</TableHead>
-                            {isAdmin && <TableHead className="text-right min-w-[100px]">Actions</TableHead>}
+                            <TableHead className="min-w-[120px] text-right">Revenue</TableHead>
+                            {isAdmin && <TableHead className="min-w-[80px] text-right">Actions</TableHead>}
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {tasks.map((task) => (
                             <TableRow 
-                              key={task.id} 
+                              key={task.id}
                               className="cursor-pointer hover:bg-muted/50 transition-colors"
                               onClick={() => handleRowClick(task)}
                             >
                               <TableCell className="font-medium">{task.client}</TableCell>
+                              <TableCell>{task.taskCategory}</TableCell>
+                              <TableCell>{task.subCategory}</TableCell>
                               <TableCell>
-                                <Badge variant="outline">{task.taskCategory}</Badge>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="secondary">{task.subCategory}</Badge>
-                              </TableCell>
-                              <TableCell>
-                                <Badge>{task.status}</Badge>
+                                <Badge variant={getStatusColor(task.status)}>{task.status}</Badge>
                               </TableCell>
                               <TableCell>
-                                <Badge variant="outline">{task.paymentStatus}</Badge>
+                                <Badge variant={getPaymentColor(task.paymentStatus)}>{task.paymentStatus}</Badge>
                               </TableCell>
-                              <TableCell className="text-sm">
-                                {task.assigneeName || '-'}
-                              </TableCell>
-                              <TableCell className="text-sm">
-                                {task.captainName || '-'}
-                              </TableCell>
+                              <TableCell className="text-sm">{task.assigneeName || '-'}</TableCell>
+                              <TableCell className="text-sm">{task.captainName || '-'}</TableCell>
+                              <TableCell className="text-right font-medium">{formatCurrency(task.bill)}</TableCell>
                               {isAdmin && (
                                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                                   <Button
                                     variant="ghost"
-                                    size="sm"
+                                    size="icon"
                                     onClick={(e) => handleEditClick(task, e)}
                                   >
                                     <Edit className="h-4 w-4" />
@@ -170,16 +181,12 @@ export default function TaskDetailDialog({
             </TabsContent>
 
             {openTabs.map(tab => (
-              <TabsContent key={tab.id} value={`task-${tab.id}`} className="flex-1 mt-4 min-h-0">
-                <ScrollArea className="h-full w-full">
-                  <div className="pr-4">
-                    <TaskDetailsTab 
-                      task={tab.task} 
-                      isAdmin={isAdmin}
-                      onTaskUpdated={handleTaskUpdated}
-                    />
-                  </div>
-                </ScrollArea>
+              <TabsContent key={tab.id} value={`task-${tab.id}`} className="flex-1 min-h-0">
+                <TaskDetailsTab 
+                  task={tab.task} 
+                  isAdmin={isAdmin}
+                  onTaskUpdated={handleTaskUpdated}
+                />
               </TabsContent>
             ))}
           </Tabs>

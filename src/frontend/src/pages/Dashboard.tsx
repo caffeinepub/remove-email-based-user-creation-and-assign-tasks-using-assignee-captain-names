@@ -5,6 +5,7 @@ import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Toolti
 import { ListTodo, CheckCircle2, Clock, DollarSign } from 'lucide-react';
 import TaskDetailDialog from '../components/TaskDetailDialog';
 import type { Task } from '../backend';
+import { formatCurrency } from '../utils/currency';
 
 interface DashboardProps {
   isAdmin: boolean;
@@ -33,6 +34,9 @@ export default function Dashboard({ isAdmin }: DashboardProps) {
     description: '',
     isLoading: false,
   });
+
+  // Calculate total revenue
+  const totalRevenue = tasks.reduce((sum, task) => sum + Number(task.bill), 0);
 
   const categoryChartData = categoryData.map(([name, count]) => ({
     name,
@@ -138,6 +142,16 @@ export default function Dashboard({ isAdmin }: DashboardProps) {
     }
   };
 
+  const handleAllTasksClick = () => {
+    setDetailDialog({
+      open: true,
+      tasks: tasks,
+      title: 'All Tasks',
+      description: `Showing all ${tasks.length} task${tasks.length !== 1 ? 's' : ''} in the system`,
+      isLoading: false,
+    });
+  };
+
   const handleSummaryCardClick = (type: 'category' | 'status' | 'payment') => {
     let title = '';
     let description = '';
@@ -182,7 +196,10 @@ export default function Dashboard({ isAdmin }: DashboardProps) {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card 
+          className="cursor-pointer transition-all hover:shadow-md hover:scale-[1.02]"
+          onClick={handleAllTasksClick}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Tasks</CardTitle>
             <ListTodo className="h-4 w-4 text-muted-foreground" />
@@ -191,6 +208,19 @@ export default function Dashboard({ isAdmin }: DashboardProps) {
             <div className="text-2xl font-bold">{tasks.length}</div>
             <p className="text-xs text-muted-foreground mt-1">
               {isAdmin ? 'All tasks in system' : 'Your tasks'}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatCurrency(totalRevenue)}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Total billed amount
             </p>
           </CardContent>
         </Card>
@@ -220,20 +250,6 @@ export default function Dashboard({ isAdmin }: DashboardProps) {
           <CardContent>
             <div className="text-2xl font-bold">{statusData.length}</div>
             <p className="text-xs text-muted-foreground mt-1">Different statuses</p>
-          </CardContent>
-        </Card>
-
-        <Card 
-          className="cursor-pointer transition-all hover:shadow-md hover:scale-[1.02]"
-          onClick={() => handleSummaryCardClick('payment')}
-        >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Payment Types</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{paymentData.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">Payment statuses</p>
           </CardContent>
         </Card>
       </div>
