@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 import type { Task } from '../backend';
 
 interface TaskFormDialogProps {
@@ -12,9 +14,10 @@ interface TaskFormDialogProps {
   onOpenChange: (open: boolean) => void;
   task?: Task;
   isAdmin: boolean;
+  onTaskUpdated?: (updatedTask: Task) => void;
 }
 
-export default function TaskFormDialog({ open, onOpenChange, task, isAdmin }: TaskFormDialogProps) {
+export default function TaskFormDialog({ open, onOpenChange, task, isAdmin, onTaskUpdated }: TaskFormDialogProps) {
   const [client, setClient] = useState('');
   const [taskCategory, setTaskCategory] = useState('');
   const [subCategory, setSubCategory] = useState('');
@@ -23,6 +26,7 @@ export default function TaskFormDialog({ open, onOpenChange, task, isAdmin }: Ta
   const [assigneeName, setAssigneeName] = useState('');
   const [captainName, setCaptainName] = useState('');
   const [selectedAssignee, setSelectedAssignee] = useState('');
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const { data: categories = [] } = useGetTaskCategories();
   const { data: subCategories = [] } = useGetSubCategories();
@@ -53,6 +57,7 @@ export default function TaskFormDialog({ open, onOpenChange, task, isAdmin }: Ta
       setCaptainName('');
       setSelectedAssignee('');
     }
+    setSubmitError(null);
   }, [task, open]);
 
   useEffect(() => {
@@ -72,30 +77,39 @@ export default function TaskFormDialog({ open, onOpenChange, task, isAdmin }: Ta
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitError(null);
 
-    const taskData = {
-      client: client.trim(),
-      taskCategory,
-      subCategory,
-      status: status || 'Pending',
-      paymentStatus: paymentStatus || 'Unpaid',
-      assigneeName: assigneeName.trim(),
-      captainName: captainName.trim(),
-    };
+    try {
+      const taskData = {
+        client: client.trim(),
+        taskCategory,
+        subCategory,
+        status: status || (task?.status || 'Pending'),
+        paymentStatus: paymentStatus || (task?.paymentStatus || 'Unpaid'),
+        assigneeName: assigneeName.trim(),
+        captainName: captainName.trim(),
+      };
 
-    if (task) {
-      await updateTask.mutateAsync({
-        taskId: task.id,
-        ...taskData,
-      });
-    } else {
-      await createTask.mutateAsync({
-        ownerPrincipal: null,
-        ...taskData,
-      });
+      if (task) {
+        const updatedTask = await updateTask.mutateAsync({
+          taskId: task.id,
+          ...taskData,
+        });
+        
+        if (onTaskUpdated && updatedTask) {
+          onTaskUpdated(updatedTask);
+        }
+      } else {
+        await createTask.mutateAsync({
+          ownerPrincipal: null,
+          ...taskData,
+        });
+      }
+
+      onOpenChange(false);
+    } catch (error: any) {
+      setSubmitError(error.message || 'Failed to save task. Please try again.');
     }
-
-    onOpenChange(false);
   };
 
   const filteredSubCategories = subCategories.filter(
@@ -115,6 +129,13 @@ export default function TaskFormDialog({ open, onOpenChange, task, isAdmin }: Ta
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {submitError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{submitError}</AlertDescription>
+            </Alert>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="client">Client</Label>
             <Input
@@ -179,7 +200,7 @@ export default function TaskFormDialog({ open, onOpenChange, task, isAdmin }: Ta
             <Label htmlFor="status">Status</Label>
             <Select value={status} onValueChange={setStatus}>
               <SelectTrigger id="status">
-                <SelectValue placeholder="Select status (optional)" />
+                <SelectValue placeholder={task ? `Current: ${task.status}` : "Select status (optional)"} />
               </SelectTrigger>
               <SelectContent>
                 {statuses.length === 0 ? (
@@ -201,7 +222,7 @@ export default function TaskFormDialog({ open, onOpenChange, task, isAdmin }: Ta
             <Label htmlFor="payment">Payment Status</Label>
             <Select value={paymentStatus} onValueChange={setPaymentStatus}>
               <SelectTrigger id="payment">
-                <SelectValue placeholder="Select payment status (optional)" />
+                <SelectValue placeholder={task ? `Current: ${task.paymentStatus}` : "Select payment status (optional)"} />
               </SelectTrigger>
               <SelectContent>
                 {paymentStatuses.length === 0 ? (

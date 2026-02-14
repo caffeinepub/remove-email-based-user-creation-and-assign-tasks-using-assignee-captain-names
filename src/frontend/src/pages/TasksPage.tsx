@@ -6,10 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Pencil, Trash2, Filter, Plus } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Search, Pencil, Trash2, Filter, Plus, X } from 'lucide-react';
 import TaskFormDialog from '../components/TaskFormDialog';
 import AdminTaskDialog from '../components/AdminTaskDialog';
+import TaskDetailsTab from '../components/TaskDetailsTab';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useTaskDetailTabs } from '../hooks/useTaskDetailTabs';
 import type { Task } from '../backend';
 
 interface TasksPageProps {
@@ -31,6 +34,8 @@ export default function TasksPage({ isAdmin }: TasksPageProps) {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [deletingTask, setDeletingTask] = useState<Task | null>(null);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
+  
+  const { activeTab, setActiveTab, openTabs, openTaskTab, closeTab, updateTabTask } = useTaskDetailTabs();
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {
@@ -53,8 +58,24 @@ export default function TasksPage({ isAdmin }: TasksPageProps) {
   const handleDelete = async () => {
     if (deletingTask) {
       await deleteTask.mutateAsync(deletingTask.id);
+      // Close the tab if it's open
+      closeTab(deletingTask.id);
       setDeletingTask(null);
     }
+  };
+
+  const handleTaskClick = (task: Task) => {
+    openTaskTab(task);
+  };
+
+  const handleCloseTab = (taskId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    closeTab(taskId);
+  };
+
+  const handleTaskUpdated = (updatedTask: Task) => {
+    // Update the tab with the latest task data
+    updateTabTask(updatedTask);
   };
 
   const getStatusColor = (status: string) => {
@@ -88,138 +109,177 @@ export default function TasksPage({ isAdmin }: TasksPageProps) {
         )}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Filter Tasks</CardTitle>
-          <CardDescription>Search and filter your tasks</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search tasks..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Categories" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.name}>
-                    {cat.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                {statuses.map((status) => (
-                  <SelectItem key={status.id} value={status.name}>
-                    {status.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={paymentFilter} onValueChange={setPaymentFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Payment Statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Payment Statuses</SelectItem>
-                {paymentStatuses.map((payment) => (
-                  <SelectItem key={payment.id} value={payment.name}>
-                    {payment.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="w-full justify-start overflow-x-auto">
+          <TabsTrigger value="list">Task List</TabsTrigger>
+          {openTabs.map(tab => (
+            <TabsTrigger key={tab.id} value={`task-${tab.id}`} className="gap-2">
+              <span className="max-w-[120px] truncate">{tab.task.client}</span>
+              <button
+                onClick={(e) => handleCloseTab(tab.id, e)}
+                className="ml-1 rounded-sm hover:bg-muted p-0.5 transition-colors"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Task List</CardTitle>
-          <CardDescription>
-            {filteredTasks.length} {filteredTasks.length === 1 ? 'task' : 'tasks'} found
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex h-32 items-center justify-center">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-            </div>
-          ) : filteredTasks.length === 0 ? (
-            <div className="flex h-32 flex-col items-center justify-center text-center">
-              <Filter className="h-8 w-8 text-muted-foreground mb-2" />
-              <p className="text-muted-foreground">No tasks found</p>
-              <p className="text-sm text-muted-foreground">Try adjusting your filters</p>
-            </div>
-          ) : (
-            <div className="rounded-md border overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Client</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Sub Category</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Payment</TableHead>
-                    <TableHead>Assignee</TableHead>
-                    <TableHead>Captain</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredTasks.map((task) => (
-                    <TableRow key={task.id}>
-                      <TableCell className="font-medium">{task.client}</TableCell>
-                      <TableCell>{task.taskCategory}</TableCell>
-                      <TableCell>{task.subCategory}</TableCell>
-                      <TableCell>
-                        <Badge variant={getStatusColor(task.status)}>{task.status}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={getPaymentColor(task.paymentStatus)}>{task.paymentStatus}</Badge>
-                      </TableCell>
-                      <TableCell className="text-sm">{task.assigneeName || '-'}</TableCell>
-                      <TableCell className="text-sm">{task.captainName || '-'}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setEditingTask(task)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setDeletingTask(task)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        <TabsContent value="list" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Filter Tasks</CardTitle>
+              <CardDescription>Search and filter your tasks</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Search tasks..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Categories" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.name}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    {statuses.map((status) => (
+                      <SelectItem key={status.id} value={status.name}>
+                        {status.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Payment Statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Payment Statuses</SelectItem>
+                    {paymentStatuses.map((payment) => (
+                      <SelectItem key={payment.id} value={payment.name}>
+                        {payment.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Task List</CardTitle>
+              <CardDescription>
+                {filteredTasks.length} {filteredTasks.length === 1 ? 'task' : 'tasks'} found
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="flex h-32 items-center justify-center">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                </div>
+              ) : filteredTasks.length === 0 ? (
+                <div className="flex h-32 flex-col items-center justify-center text-center">
+                  <Filter className="h-8 w-8 text-muted-foreground mb-2" />
+                  <p className="text-muted-foreground">No tasks found</p>
+                  <p className="text-sm text-muted-foreground">Try adjusting your filters</p>
+                </div>
+              ) : (
+                <div className="rounded-md border overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Client</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead>Sub Category</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Payment</TableHead>
+                        <TableHead>Assignee</TableHead>
+                        <TableHead>Captain</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredTasks.map((task) => (
+                        <TableRow 
+                          key={task.id} 
+                          className="cursor-pointer hover:bg-muted/50 transition-colors"
+                          onClick={() => handleTaskClick(task)}
+                        >
+                          <TableCell className="font-medium">{task.client}</TableCell>
+                          <TableCell>{task.taskCategory}</TableCell>
+                          <TableCell>{task.subCategory}</TableCell>
+                          <TableCell>
+                            <Badge variant={getStatusColor(task.status)}>{task.status}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={getPaymentColor(task.paymentStatus)}>{task.paymentStatus}</Badge>
+                          </TableCell>
+                          <TableCell className="text-sm">{task.assigneeName || '-'}</TableCell>
+                          <TableCell className="text-sm">{task.captainName || '-'}</TableCell>
+                          <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingTask(task);
+                                }}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeletingTask(task);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {openTabs.map(tab => (
+          <TabsContent key={tab.id} value={`task-${tab.id}`}>
+            <TaskDetailsTab 
+              task={tab.task} 
+              isAdmin={isAdmin}
+              onTaskUpdated={handleTaskUpdated}
+            />
+          </TabsContent>
+        ))}
+      </Tabs>
 
       {isAdmin && (
         <AdminTaskDialog
@@ -232,12 +292,11 @@ export default function TasksPage({ isAdmin }: TasksPageProps) {
         <TaskFormDialog
           open={!!editingTask}
           onOpenChange={(open) => {
-            if (!open) {
-              setEditingTask(null);
-            }
+            if (!open) setEditingTask(null);
           }}
           task={editingTask}
           isAdmin={isAdmin}
+          onTaskUpdated={handleTaskUpdated}
         />
       )}
 
@@ -246,13 +305,13 @@ export default function TasksPage({ isAdmin }: TasksPageProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Task</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this task? This action cannot be undone.
+              Are you sure you want to delete the task for "{deletingTask?.client}"? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={deleteTask.isPending}>
-              {deleteTask.isPending ? 'Deleting...' : 'Delete'}
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

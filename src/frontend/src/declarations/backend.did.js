@@ -108,6 +108,11 @@ export const idlService = IDL.Service({
       [IDL.Vec(Task)],
       [],
     ),
+  'bulkUpdateAssigneeCaptainPairs' : IDL.Func(
+      [IDL.Vec(AssigneeCaptainInput)],
+      [],
+      [],
+    ),
   'createPaymentStatus' : IDL.Func([IDL.Text], [PaymentStatus], []),
   'createSubCategory' : IDL.Func([IDL.Text, TaskCategory], [SubCategory], []),
   'createTask' : IDL.Func(
@@ -309,6 +314,11 @@ export const idlFactory = ({ IDL }) => {
           ),
         ],
         [IDL.Vec(Task)],
+        [],
+      ),
+    'bulkUpdateAssigneeCaptainPairs' : IDL.Func(
+        [IDL.Vec(AssigneeCaptainInput)],
+        [],
         [],
       ),
     'createPaymentStatus' : IDL.Func([IDL.Text], [PaymentStatus], []),

@@ -9,9 +9,7 @@ import Principal "mo:core/Principal";
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
 import MixinStorage "blob-storage/Mixin";
-import Migration "migration";
 
-(with migration = Migration.run)
 actor {
   // Initialize the access control system.
   let accessControlState = AccessControl.initState();
@@ -130,6 +128,16 @@ actor {
       Runtime.trap("Assignee already exists");
     };
     assigneeCaptainDirectory.add(input.assignee, input.captain);
+  };
+
+  public shared ({ caller }) func bulkUpdateAssigneeCaptainPairs(pairs : [AssigneeCaptainInput]) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can bulk update assignee/captain pairs");
+    };
+
+    for (pair in pairs.values()) {
+      assigneeCaptainDirectory.add(pair.assignee, pair.captain);
+    };
   };
 
   public shared ({ caller }) func updateAssigneeCaptainPair(assignee : Text, update : AssigneeCaptainUpdate) : async () {
@@ -378,7 +386,7 @@ actor {
       Runtime.trap("Unauthorized: Can only update your own tasks");
     };
 
-    let updatedTask : Task = {
+    var updatedTask = {
       id = existingTask.id;
       owner = existingTask.owner;
       client;

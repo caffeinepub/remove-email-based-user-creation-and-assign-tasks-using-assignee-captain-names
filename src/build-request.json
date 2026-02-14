@@ -1,126 +1,38 @@
 {
   "kind": "build_request",
-  "title": "Add admin-managed Assignee + Captain directory and optional selection in task forms",
+  "title": "Increase size of the Dashboard task list dialog window",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-6",
-      "text": "Add backend support for an admin-managed directory of assignee-to-captain pairs, including storage and admin-only CRUD APIs, plus a user-accessible read API for populating task forms.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-6"
-        ],
-        "quotes": [
-          "ADD OPTION TO  ADD ASSIGNEES AND HIS  CAPTAIN"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Backend exposes an admin-only method to create a new assignee entry with: assigneeName (Text) and captainName (Text).",
-        "Backend exposes an admin-only method to update an existing assignee entry (by id or by unique assigneeName) to change assigneeName and/or captainName.",
-        "Backend exposes an admin-only method to delete an assignee entry.",
-        "Backend exposes a method available to regular users (role #user) to list all assignee entries for use in the UI.",
-        "API methods enforce permissions using the existing access control system (only admins can mutate; users can read/list).",
-        "Duplicate handling is defined and enforced (either reject duplicate assigneeName with a clear trap message, or allow duplicates by id and return all entries consistently)."
-      ]
-    },
-    {
-      "id": "REQ-7",
-      "text": "Add a new Admin Panel UI section to add/manage assignees and their captains (create, list, edit, delete).",
+      "id": "REQ-23",
+      "text": "Increase the size (width + height) of the Dashboard modal window shown in the screenshot (the TaskDetailDialog used for \"All Categories\" / \"All Statuses\" / \"All Payment Types\" and chart-click task lists) so it uses substantially more of the viewport on desktop while remaining responsive on smaller screens.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-6"
         ],
         "quotes": [
-          "ADD OPTION TO  ADD ASSIGNEES AND HIS  CAPTAIN"
+          "make this window large"
         ]
       },
       "acceptanceCriteria": [
-        "AdminPage includes an additional tab (e.g., \"Assignees\") alongside existing Admin tabs.",
-        "The Assignees tab provides a form with two inputs: \"Assignee Name\" and \"Captain Name\", and a save action.",
-        "The Assignees tab shows a table/list of existing entries with at least: Assignee Name, Captain Name, and actions to Edit and Delete.",
-        "Create/Edit/Delete operations show success/failure feedback using the existing toast pattern (sonner).",
-        "The assignee directory UI is only reachable within the existing Admin area (no new top-level navigation outside Admin)."
-      ]
-    },
-    {
-      "id": "REQ-8",
-      "text": "Update task create/edit dialogs to optionally select an assignee from the saved directory and auto-fill assignee and captain fields while still allowing manual overrides.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-6"
-        ],
-        "quotes": [
-          "ADD OPTION TO  ADD ASSIGNEES AND HIS  CAPTAIN"
-        ]
-      },
-      "acceptanceCriteria": [
-        "TaskFormDialog and AdminTaskDialog fetch the assignee directory list and display an optional selector (e.g., \"Select Assignee (optional)\").",
-        "When an assignee is selected, the dialog auto-fills Assignee Name and Captain Name inputs based on the selected entry.",
-        "Users can still manually edit Assignee Name and Captain Name after auto-fill (selection does not lock the fields).",
-        "If there are no saved assignees, the selector indicates the empty state and the manual text inputs remain usable."
-      ]
-    },
-    {
-      "id": "REQ-9",
-      "text": "Add React Query hooks and caching for assignee directory APIs, and ensure task-related screens reuse the cached data where applicable.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-6"
-        ],
-        "quotes": [
-          "ADD OPTION TO  ADD ASSIGNEES AND HIS  CAPTAIN"
-        ]
-      },
-      "acceptanceCriteria": [
-        "A query hook exists to list assignee entries (shared by Admin assignee management and task dialogs).",
-        "Mutation hooks exist for create/update/delete assignee entries and invalidate the assignee list query on success.",
-        "Error handling uses the existing parseAuthError/toast pattern in useQueries.ts."
-      ]
-    },
-    {
-      "id": "REQ-10",
-      "text": "Ensure upgrades preserve existing state by extending the conditional migration to include the new assignee directory state with safe defaults.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-6"
-        ],
-        "quotes": [
-          "ADD OPTION TO  ADD ASSIGNEES AND HIS  CAPTAIN"
-        ]
-      },
-      "acceptanceCriteria": [
-        "If the canister is upgraded from a version without the assignee directory, the migrated state initializes the assignee directory to empty without trapping.",
-        "Existing tasks and existing migrated assigneeName/captainName fields remain unchanged after upgrade."
+        "When opening the Dashboard summary card dialog titled \"All Categories\" (Dashboard > Categories card), the dialog content area is noticeably larger than before (wider and taller) on desktop screens.",
+        "The dialog remains responsive on small screens (e.g., uses viewport-relative sizing and does not overflow the viewport).",
+        "The task list content remains usable at the larger size: the table area scrolls (vertically and, if needed, horizontally) without clipping important columns (e.g., Assignee, Captain, Actions).",
+        "No changes are made to read-only Shadcn UI component sources under frontend/src/components/ui; sizing is applied via composition (e.g., DialogContent className) in app components such as frontend/src/components/TaskDetailDialog.tsx."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single Motoko actor with all logic in backend/main.mo.",
-    "Do not edit frontend immutable paths: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui.",
-    "Use English for all user-facing UI text."
+    "Do not modify any files under frontend/src/components/ui (read-only UI component sources); apply dialog sizing via component composition and className overrides in app-owned components.",
+    "Use English for any user-facing text."
   ],
   "nonGoals": [
-    "Do not reintroduce email/principal-based assignee selection for tasks.",
-    "Do not add third-party authentication or any external database.",
-    "Do not change bulk upload format/columns beyond optionally leveraging the saved directory in the UI (no CSV schema change required)."
+    "Redesigning the Dashboard charts or changing task filtering behavior.",
+    "Changing backend APIs or data models."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

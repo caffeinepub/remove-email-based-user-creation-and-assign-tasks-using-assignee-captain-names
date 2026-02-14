@@ -1,84 +1,34 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-13T11:40:16.847Z",
+  "generatedAt": "2026-02-13T12:29:42.537Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 5,
-    "implemented": 3,
+    "total": 1,
+    "implemented": 1,
     "items": [
       {
-        "id": "REQ-10",
-        "summary": "Ensure upgrades preserve existing state by extending the conditional migration to include the new assignee directory state with safe defaults.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-6",
-        "summary": "Add backend support for an admin-managed directory of assignee-to-captain pairs, including storage and admin-only CRUD APIs, plus a user-accessible read API for populating task forms.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-7",
-        "summary": "Add a new Admin Panel UI section to add/manage assignees and their captains (create, list, edit, delete).",
+        "id": "REQ-23",
+        "summary": "Increase the size (width + height) of the Dashboard modal window shown in the screenshot (the TaskDetailDialog used for \"All Categories\" / \"All Statuses\" / \"All Payment Types\" and chart-click task lists) so it uses substantially more of the viewport on desktop while remaining responsive on smaller screens.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/AdminPage.tsx",
-          "frontend/src/components/AssigneeDirectoryManagement.tsx"
+          "frontend/src/components/TaskDetailDialog.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/AdminPage.tsx",
-          "frontend/src/components/AssigneeDirectoryManagement.tsx"
-        ]
-      },
-      {
-        "id": "REQ-8",
-        "summary": "Update task create/edit dialogs to optionally select an assignee from the saved directory and auto-fill assignee and captain fields while still allowing manual overrides.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/TaskFormDialog.tsx",
-          "frontend/src/components/AdminTaskDialog.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/TaskFormDialog.tsx",
-          "frontend/src/components/AdminTaskDialog.tsx"
-        ]
-      },
-      {
-        "id": "REQ-9",
-        "summary": "Add React Query hooks and caching for assignee directory APIs, and ensure task-related screens reuse the cached data where applicable.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/hooks/useQueries.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/hooks/useQueries.ts"
+          "frontend/src/components/TaskDetailDialog.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
-    "backend/main.mo",
-    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/backend.d.ts",
-    "frontend/src/backend.ts",
-    "frontend/src/components/AdminTaskDialog.tsx",
-    "frontend/src/components/AssigneeDirectoryManagement.tsx",
-    "frontend/src/components/TaskFormDialog.tsx",
-    "frontend/src/declarations/backend.did.d.ts",
-    "frontend/src/declarations/backend.did.js",
-    "frontend/src/hooks/useQueries.ts",
-    "frontend/src/pages/AdminPage.tsx",
+    "frontend/src/components/TaskDetailDialog.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

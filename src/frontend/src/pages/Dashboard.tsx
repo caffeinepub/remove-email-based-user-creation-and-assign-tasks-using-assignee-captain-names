@@ -162,6 +162,16 @@ export default function Dashboard({ isAdmin }: DashboardProps) {
     });
   };
 
+  const handleTaskUpdated = (updatedTask: Task) => {
+    // Update the dialog's task list with the updated task
+    setDetailDialog((prev) => ({
+      ...prev,
+      tasks: prev.tasks.map((task) => 
+        task.id === updatedTask.id ? updatedTask : task
+      ),
+    }));
+  };
+
   return (
     <div className="space-y-8">
       <div>
@@ -352,12 +362,13 @@ export default function Dashboard({ isAdmin }: DashboardProps) {
 
       <TaskDetailDialog
         open={detailDialog.open}
-        onOpenChange={(open) => setDetailDialog({ ...detailDialog, open })}
+        onOpenChange={(open) => setDetailDialog(prev => ({ ...prev, open }))}
         tasks={detailDialog.tasks}
         title={detailDialog.title}
         description={detailDialog.description}
         isAdmin={isAdmin}
         isLoading={detailDialog.isLoading}
+        onTaskUpdated={handleTaskUpdated}
       />
     </div>
   );

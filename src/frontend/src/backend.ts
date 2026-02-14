@@ -160,6 +160,7 @@ export interface backendInterface {
     addAssigneeCaptainPair(input: AssigneeCaptainInput): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     bulkCreateTasks(tasksData: Array<[Principal, string, string, string, string, string, string, string]>): Promise<Array<Task>>;
+    bulkUpdateAssigneeCaptainPairs(pairs: Array<AssigneeCaptainInput>): Promise<void>;
     createPaymentStatus(name: string): Promise<PaymentStatus>;
     createSubCategory(name: string, category: TaskCategory): Promise<SubCategory>;
     createTask(ownerPrincipal: Principal | null, client: string, taskCategory: string, subCategory: string, status: string, paymentStatus: string, assigneeName: string, captainName: string): Promise<Task>;
@@ -337,6 +338,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.bulkCreateTasks(arg0);
+            return result;
+        }
+    }
+    async bulkUpdateAssigneeCaptainPairs(arg0: Array<AssigneeCaptainInput>): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.bulkUpdateAssigneeCaptainPairs(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.bulkUpdateAssigneeCaptainPairs(arg0);
             return result;
         }
     }

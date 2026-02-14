@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useActor } from './useActor';
+import { useSafeActor } from './useSafeActor';
 import type { Task, UserProfile, TaskCategory, SubCategory, TaskStatus, PaymentStatus, AssigneeCaptainInput, AssigneeCaptainUpdate } from '../backend';
 import { UserRole } from '../backend';
 import { Principal } from '@dfinity/principal';
@@ -22,7 +22,7 @@ function parseAuthError(error: Error): string {
 
 // User Profile Queries
 export function useGetCallerUserProfile() {
-  const { actor, isFetching: actorFetching } = useActor();
+  const { actor, isFetching: actorFetching } = useSafeActor();
 
   const query = useQuery<UserProfile | null>({
     queryKey: ['currentUserProfile'],
@@ -31,7 +31,8 @@ export function useGetCallerUserProfile() {
       return actor.getCallerUserProfile();
     },
     enabled: !!actor && !actorFetching,
-    retry: false,
+    retry: 1,
+    retryDelay: 1000,
   });
 
   return {
@@ -42,7 +43,7 @@ export function useGetCallerUserProfile() {
 }
 
 export function useSaveCallerUserProfile() {
-  const { actor } = useActor();
+  const { actor } = useSafeActor();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -62,7 +63,7 @@ export function useSaveCallerUserProfile() {
 }
 
 export function useIsCallerAdmin() {
-  const { actor, isFetching } = useActor();
+  const { actor, isFetching } = useSafeActor();
 
   return useQuery<boolean>({
     queryKey: ['isCallerAdmin'],
@@ -71,12 +72,14 @@ export function useIsCallerAdmin() {
       return actor.isCallerAdmin();
     },
     enabled: !!actor && !isFetching,
+    retry: 1,
+    retryDelay: 1000,
   });
 }
 
 // Task Queries
 export function useGetTasks() {
-  const { actor, isFetching } = useActor();
+  const { actor, isFetching } = useSafeActor();
 
   return useQuery<Task[]>({
     queryKey: ['tasks'],
@@ -89,7 +92,7 @@ export function useGetTasks() {
 }
 
 export function useFilterTasksByCategory() {
-  const { actor } = useActor();
+  const { actor } = useSafeActor();
 
   return useMutation({
     mutationFn: async (category: string) => {
@@ -103,7 +106,7 @@ export function useFilterTasksByCategory() {
 }
 
 export function useFilterTasksByStatus() {
-  const { actor } = useActor();
+  const { actor } = useSafeActor();
 
   return useMutation({
     mutationFn: async (status: string) => {
@@ -117,7 +120,7 @@ export function useFilterTasksByStatus() {
 }
 
 export function useFilterTasksByPaymentStatus() {
-  const { actor } = useActor();
+  const { actor } = useSafeActor();
 
   return useMutation({
     mutationFn: async (paymentStatus: string) => {
@@ -131,7 +134,7 @@ export function useFilterTasksByPaymentStatus() {
 }
 
 export function useCreateTask() {
-  const { actor } = useActor();
+  const { actor } = useSafeActor();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -171,7 +174,7 @@ export function useCreateTask() {
 }
 
 export function useUpdateTask() {
-  const { actor } = useActor();
+  const { actor } = useSafeActor();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -197,21 +200,30 @@ export function useUpdateTask() {
         data.captainName
       );
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    onSuccess: (updatedTask) => {
+      queryClient.setQueryData<Task[]>(['tasks'], (oldTasks) => {
+        if (!oldTasks) return [updatedTask];
+        return oldTasks.map((task) => 
+          task.id === updatedTask.id ? updatedTask : task
+        );
+      });
+      
       queryClient.invalidateQueries({ queryKey: ['taskCountsPerCategory'] });
       queryClient.invalidateQueries({ queryKey: ['taskCountsPerStatus'] });
       queryClient.invalidateQueries({ queryKey: ['taskCountsPerPaymentStatus'] });
       toast.success('Task updated successfully');
+      
+      return updatedTask;
     },
     onError: (error: Error) => {
       toast.error(parseAuthError(error));
+      throw error;
     },
   });
 }
 
 export function useDeleteTask() {
-  const { actor } = useActor();
+  const { actor } = useSafeActor();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -234,7 +246,7 @@ export function useDeleteTask() {
 
 // Category Queries
 export function useGetTaskCategories() {
-  const { actor, isFetching } = useActor();
+  const { actor, isFetching } = useSafeActor();
 
   return useQuery<TaskCategory[]>({
     queryKey: ['taskCategories'],
@@ -247,7 +259,7 @@ export function useGetTaskCategories() {
 }
 
 export function useGetSubCategories() {
-  const { actor, isFetching } = useActor();
+  const { actor, isFetching } = useSafeActor();
 
   return useQuery<SubCategory[]>({
     queryKey: ['subCategories'],
@@ -260,7 +272,7 @@ export function useGetSubCategories() {
 }
 
 export function useGetTaskStatuses() {
-  const { actor, isFetching } = useActor();
+  const { actor, isFetching } = useSafeActor();
 
   return useQuery<TaskStatus[]>({
     queryKey: ['taskStatuses'],
@@ -273,7 +285,7 @@ export function useGetTaskStatuses() {
 }
 
 export function useGetPaymentStatuses() {
-  const { actor, isFetching } = useActor();
+  const { actor, isFetching } = useSafeActor();
 
   return useQuery<PaymentStatus[]>({
     queryKey: ['paymentStatuses'],
@@ -286,7 +298,7 @@ export function useGetPaymentStatuses() {
 }
 
 export function useCreateTaskCategory() {
-  const { actor } = useActor();
+  const { actor } = useSafeActor();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -305,7 +317,7 @@ export function useCreateTaskCategory() {
 }
 
 export function useCreateSubCategory() {
-  const { actor } = useActor();
+  const { actor } = useSafeActor();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -324,7 +336,7 @@ export function useCreateSubCategory() {
 }
 
 export function useCreateTaskStatus() {
-  const { actor } = useActor();
+  const { actor } = useSafeActor();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -343,7 +355,7 @@ export function useCreateTaskStatus() {
 }
 
 export function useCreatePaymentStatus() {
-  const { actor } = useActor();
+  const { actor } = useSafeActor();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -363,7 +375,7 @@ export function useCreatePaymentStatus() {
 
 // Analytics Queries
 export function useGetTaskCountsPerCategory() {
-  const { actor, isFetching } = useActor();
+  const { actor, isFetching } = useSafeActor();
 
   return useQuery<[string, bigint][]>({
     queryKey: ['taskCountsPerCategory'],
@@ -376,7 +388,7 @@ export function useGetTaskCountsPerCategory() {
 }
 
 export function useGetTaskCountsPerStatus() {
-  const { actor, isFetching } = useActor();
+  const { actor, isFetching } = useSafeActor();
 
   return useQuery<[string, bigint][]>({
     queryKey: ['taskCountsPerStatus'],
@@ -389,7 +401,7 @@ export function useGetTaskCountsPerStatus() {
 }
 
 export function useGetTaskCountsPerPaymentStatus() {
-  const { actor, isFetching } = useActor();
+  const { actor, isFetching } = useSafeActor();
 
   return useQuery<[string, bigint][]>({
     queryKey: ['taskCountsPerPaymentStatus'],
@@ -403,7 +415,7 @@ export function useGetTaskCountsPerPaymentStatus() {
 
 // Bulk Upload
 export function useBulkCreateTasks() {
-  const { actor } = useActor();
+  const { actor } = useSafeActor();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -426,7 +438,7 @@ export function useBulkCreateTasks() {
 
 // User Management (Admin Only)
 export function useListAllUsers() {
-  const { actor, isFetching } = useActor();
+  const { actor, isFetching } = useSafeActor();
 
   return useQuery<UserProfile[]>({
     queryKey: ['users'],
@@ -439,7 +451,7 @@ export function useListAllUsers() {
 }
 
 export function useCreateUser() {
-  const { actor } = useActor();
+  const { actor } = useSafeActor();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -458,7 +470,7 @@ export function useCreateUser() {
 }
 
 export function useDeleteUser() {
-  const { actor } = useActor();
+  const { actor } = useSafeActor();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -476,22 +488,8 @@ export function useDeleteUser() {
   });
 }
 
-export function useGetUserRole() {
-  const { actor } = useActor();
-
-  return useMutation({
-    mutationFn: async (user: Principal) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.getUserRole(user);
-    },
-    onError: (error: Error) => {
-      toast.error(parseAuthError(error));
-    },
-  });
-}
-
 export function useSetUserRole() {
-  const { actor } = useActor();
+  const { actor } = useSafeActor();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -509,11 +507,25 @@ export function useSetUserRole() {
   });
 }
 
-// Assignee/Captain Directory Queries
-export function useGetAssigneeCaptainDirectory() {
-  const { actor, isFetching } = useActor();
+export function useGetUserRole() {
+  const { actor } = useSafeActor();
 
-  return useQuery<Array<[string, string]>>({
+  return useMutation({
+    mutationFn: async (user: Principal) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.getUserRole(user);
+    },
+    onError: (error: Error) => {
+      toast.error(parseAuthError(error));
+    },
+  });
+}
+
+// Assignee/Captain Directory Management
+export function useGetAssigneeCaptainDirectory() {
+  const { actor, isFetching } = useSafeActor();
+
+  return useQuery<[string, string][]>({
     queryKey: ['assigneeCaptainDirectory'],
     queryFn: async () => {
       if (!actor) return [];
@@ -524,7 +536,7 @@ export function useGetAssigneeCaptainDirectory() {
 }
 
 export function useAddAssigneeCaptainPair() {
-  const { actor } = useActor();
+  const { actor } = useSafeActor();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -542,8 +554,27 @@ export function useAddAssigneeCaptainPair() {
   });
 }
 
+export function useBulkUpdateAssigneeCaptainPairs() {
+  const { actor } = useSafeActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (pairs: AssigneeCaptainInput[]) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.bulkUpdateAssigneeCaptainPairs(pairs);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['assigneeCaptainDirectory'] });
+      toast.success('Assignee/Captain pairs imported successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(parseAuthError(error));
+    },
+  });
+}
+
 export function useUpdateAssigneeCaptainPair() {
-  const { actor } = useActor();
+  const { actor } = useSafeActor();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -562,7 +593,7 @@ export function useUpdateAssigneeCaptainPair() {
 }
 
 export function useDeleteAssigneeCaptainPair() {
-  const { actor } = useActor();
+  const { actor } = useSafeActor();
   const queryClient = useQueryClient();
 
   return useMutation({

@@ -86,6 +86,10 @@ export interface _SERVICE {
     ],
     Array<Task>
   >,
+  'bulkUpdateAssigneeCaptainPairs' : ActorMethod<
+    [Array<AssigneeCaptainInput>],
+    undefined
+  >,
   'createPaymentStatus' : ActorMethod<[string], PaymentStatus>,
   'createSubCategory' : ActorMethod<[string, TaskCategory], SubCategory>,
   'createTask' : ActorMethod<

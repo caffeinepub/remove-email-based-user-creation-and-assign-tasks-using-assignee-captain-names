@@ -1,12 +1,15 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 5,
+  "projectStateVersion": 15,
   "summary": "Task assignment app should not require creating users with email; tasks should be assigned using assignee name and their captain only.",
   "architectural_notes": [
     "Do not require user account creation via email; represent assignees by name and captain for task assignment."
   ],
-  "known_issues": [],
-  "isFixRequest": false,
+  "known_issues": [
+    "Users cannot update task statuses (status changes not saving/updating).",
+    "Production app not loading after Version 14 deployment (user reports 'not loading')."
+  ],
+  "isFixRequest": true,
   "existing_features": [
     {
       "id": "feature-remove-the-admin-create-new-user-and-user-list-role-management-ui-so-admins-are-no-longer-prompted-to-create-users-using-email-or-principal-id",
@@ -55,6 +58,94 @@
         "REQ-9"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-investigate-and-fix-the-issue-where-updating-an-existing-task-s-status-does-not-persist-i-e-after-selecting-a-new-status-and-clicking-update-task-the-task-still-shows-the-old-status-ensure-the-fix-works-from-the-tasks-list-edit-flow-and-the-dashboard-task-detail-edit-flow",
+      "title": "Investigate and fix the issue where updating an existing task’s Status does not persist (i.e., after selecting a new status and clicking “Update Task”, the task still shows the old status). Ensure the fix works from the Tasks list edit flow and the Dashboard task detail edit flow.",
+      "reqIds": [
+        "REQ-11"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-an-admin-only-bulk-import-flow-to-create-multiple-assignee-captain-directory-entries-at-once-using-a-downloadable-csv-template-and-a-csv-file-upload-in-the-admin-panel-assignees-section-frontend-src-components-assigneedirectorymanagement-tsx",
+      "title": "Add an Admin-only bulk import flow to create multiple Assignee/Captain directory entries at once using a downloadable CSV template and a CSV file upload in the Admin Panel > Assignees section (frontend/src/components/AssigneeDirectoryManagement.tsx).",
+      "reqIds": [
+        "REQ-13"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-react-query-hooks-frontend-src-hooks-usequeries-ts-to-call-the-new-bulk-assignee-import-backend-api-and-integrate-it-into-the-assigneedirectorymanagement-upload-ui-with-loading-states-and-success-error-toasts-in-english",
+      "title": "Update frontend React Query hooks (frontend/src/hooks/useQueries.ts) to call the new bulk assignee import backend API and integrate it into the AssigneeDirectoryManagement upload UI with loading states and success/error toasts in English.",
+      "reqIds": [
+        "REQ-15"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-an-in-app-tabbed-details-experience-so-that-clicking-a-list-item-opens-a-new-tab-view-showing-details-related-to-that-item-starting-with-the-tasks-list-specifically-in-taskspage-frontend-src-pages-taskspage-tsx-clicking-a-task-row-not-just-the-edit-icon-should-open-a-new-tab-labeled-with-a-concise-identifier-e-g-client-or-task-id-that-displays-the-task-s-details-and-allows-admin-editing-from-that-detail-view",
+      "title": "Implement an in-app tabbed “details” experience so that clicking a list item opens a new tab/view showing details related to that item (starting with the Tasks list). Specifically: in TasksPage (frontend/src/pages/TasksPage.tsx), clicking a task row (not just the edit icon) should open a new tab labeled with a concise identifier (e.g., client or task id) that displays the task’s details and allows admin editing from that detail view.",
+      "reqIds": [
+        "REQ-16"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-extend-the-same-click-opens-a-details-tab-pattern-to-the-assignee-captain-directory-list-in-admin-panel-assignees-frontend-src-components-assigneedirectorymanagement-tsx-clicking-an-assignee-row-opens-a-details-tab-view-for-that-assignee-showing-the-assignee-and-captain-values-and-offering-edit-delete-actions-admin-only-by-nature-of-the-admin-panel",
+      "title": "Extend the same “click opens a details tab” pattern to the Assignee/Captain directory list in Admin Panel > Assignees (frontend/src/components/AssigneeDirectoryManagement.tsx): clicking an assignee row opens a details tab/view for that assignee showing the assignee and captain values and offering edit/delete actions (admin-only by nature of the Admin Panel).",
+      "reqIds": [
+        "REQ-17"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-extend-the-existing-in-page-tabbed-details-pattern-so-that-clicking-a-task-row-anywhere-tasks-are-listed-opens-a-new-tab-showing-details-for-that-task-not-just-in-the-tasks-page-at-minimum-implement-this-for-the-dashboard-s-task-list-dialog-frontend-src-components-taskdetaildialog-tsx-so-each-task-row-click-opens-a-new-tab-labeled-with-a-concise-identifier-e-g-client-name-and-renders-the-existing-taskdetailstab-details-view-for-that-task-with-a-close-x-control-that-returns-to-the-list",
+      "title": "Extend the existing in-page tabbed “details” pattern so that clicking a task row anywhere tasks are listed opens a new tab showing details for that task (not just in the Tasks page). At minimum, implement this for the Dashboard’s task list dialog (frontend/src/components/TaskDetailDialog.tsx) so each task row click opens a new tab labeled with a concise identifier (e.g., client name) and renders the existing TaskDetailsTab details view for that task, with a close (X) control that returns to the list.",
+      "reqIds": [
+        "REQ-18"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-make-click-row-opens-a-details-tab-consistent-for-task-lists-by-ensuring-action-buttons-e-g-edit-delete-icons-do-not-also-trigger-opening-the-details-tab-and-that-row-click-targets-are-clearly-indicated-pointer-cursor-hover-state-wherever-implemented",
+      "title": "Make “click row opens a details tab” consistent for task lists by ensuring action buttons (e.g., edit/delete icons) do not also trigger opening the details tab and that row click targets are clearly indicated (pointer cursor + hover state) wherever implemented.",
+      "reqIds": [
+        "REQ-19"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-prevent-the-app-from-getting-stuck-on-a-blank-screen-or-indefinite-loading-state-by-adding-a-top-level-runtime-error-boundary-and-an-explicit-something-went-wrong-fallback-screen-that-renders-when-react-throws-during-initial-render-or-when-a-critical-initialization-step-fails",
+      "title": "Prevent the app from getting stuck on a blank screen or indefinite loading state by adding a top-level runtime error boundary and an explicit “Something went wrong” fallback screen that renders when React throws during initial render or when a critical initialization step fails.",
+      "reqIds": [
+        "REQ-20"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-authenticated-app-bootstrap-flow-so-that-failures-or-timeouts-in-critical-startup-queries-loading-the-backend-actor-fetching-caller-profile-checking-admin-status-do-not-block-the-entire-ui-indefinitely-show-an-english-error-state-with-a-retry-action-when-these-steps-fail",
+      "title": "Update the authenticated app bootstrap flow so that failures or timeouts in critical startup queries (loading the backend actor, fetching caller profile, checking admin status) do not block the entire UI indefinitely; show an English error state with a retry action when these steps fail.",
+      "reqIds": [
+        "REQ-21"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-minimal-client-side-diagnostics-for-production-load-failures-capture-and-log-initialization-failures-from-internet-identity-initialization-actor-creation-and-critical-react-query-calls-without-logging-secrets-such-as-the-caffeineadmintoken",
+      "title": "Add minimal client-side diagnostics for production load failures: capture and log initialization failures from Internet Identity initialization, actor creation, and critical React Query calls (without logging secrets such as the `caffeineAdminToken`).",
+      "reqIds": [
+        "REQ-22"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-increase-the-size-width-height-of-the-dashboard-modal-window-shown-in-the-screenshot-the-taskdetaildialog-used-for-all-categories-all-statuses-all-payment-types-and-chart-click-task-lists-so-it-uses-substantially-more-of-the-viewport-on-desktop-while-remaining-responsive-on-smaller-screens",
+      "title": "Increase the size (width + height) of the Dashboard modal window shown in the screenshot (the TaskDetailDialog used for \"All Categories\" / \"All Statuses\" / \"All Payment Types\" and chart-click task lists) so it uses substantially more of the viewport on desktop while remaining responsive on smaller screens.",
+      "reqIds": [
+        "REQ-23"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -99,6 +190,34 @@
       "summary": "Ensure upgrades preserve existing state by extending the conditional migration to include the new assignee directory state with safe defaults.",
       "reqIds": [
         "REQ-10"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-14",
+      "summary": "Add a focused regression check for task updates so that changes to Status and Payment Status are verifiably persisted alongside other editable fields (client, category/subcategory, assigneeName, captainName).",
+      "reqIds": [
+        "REQ-12"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-15",
+      "summary": "Add bulk addition of assignees (assignee/captain directory entries) using an import template (e.g., CSV/XLS template + upload).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-16",
+      "summary": "When clicking an item in a list, open a new tab/view showing details related to that item.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-18",
+      "summary": "Add a backend API to support bulk creation/upsert of assignee/captain directory entries from a list of pairs, restricted to admins, and expose it via the generated frontend actor types for use by the new bulk import UI.",
+      "reqIds": [
+        "REQ-14"
       ],
       "status": "pending"
     }
