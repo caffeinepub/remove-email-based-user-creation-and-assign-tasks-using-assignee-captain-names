@@ -89,10 +89,9 @@ export class ExternalBlob {
         return this;
     }
 }
-export interface SubCategory {
-    id: string;
-    name: string;
-    category: TaskCategory;
+export interface _CaffeineStorageRefillResult {
+    success?: boolean;
+    topped_up_amount?: bigint;
 }
 export type Time = bigint;
 export interface AssigneeCaptainUpdate {
@@ -101,10 +100,6 @@ export interface AssigneeCaptainUpdate {
 }
 export interface _CaffeineStorageRefillInformation {
     proposed_top_up_amount?: bigint;
-}
-export interface TaskStatus {
-    id: string;
-    name: string;
 }
 export interface TaskCategory {
     id: string;
@@ -134,7 +129,14 @@ export interface _CaffeineStorageCreateCertificateResult {
     method: string;
     blob_hash: string;
 }
-export interface PaymentStatus {
+export interface BulkTaskUpdateInput {
+    updates: Array<{
+        status?: string;
+        paymentStatus?: string;
+        taskId: string;
+    }>;
+}
+export interface TaskStatus {
     id: string;
     name: string;
 }
@@ -142,14 +144,19 @@ export interface AssigneeCaptainInput {
     assignee: string;
     captain: string;
 }
+export interface PaymentStatus {
+    id: string;
+    name: string;
+}
 export interface UserProfile {
     name: string;
     createdAt: Time;
     email: string;
 }
-export interface _CaffeineStorageRefillResult {
-    success?: boolean;
-    topped_up_amount?: bigint;
+export interface SubCategory {
+    id: string;
+    name: string;
+    category: TaskCategory;
 }
 export enum UserRole {
     admin = "admin",
@@ -166,24 +173,16 @@ export interface backendInterface {
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
     addAssigneeCaptainPair(input: AssigneeCaptainInput): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
-    bulkCreateTasks(tasksData: Array<[Principal, string, string, string, string, string, string, string, string, Time, Time, Time, bigint, bigint, bigint]>): Promise<Array<Task>>;
+    bulkDeleteAssigneeCaptainPairs(assignees: Array<string>): Promise<void>;
+    bulkDeleteTasks(taskIds: Array<string>): Promise<void>;
     bulkUpdateAssigneeCaptainPairs(pairs: Array<AssigneeCaptainInput>): Promise<void>;
+    bulkUpdateTasks(input: BulkTaskUpdateInput): Promise<void>;
     createPaymentStatus(name: string): Promise<PaymentStatus>;
     createSubCategory(name: string, category: TaskCategory): Promise<SubCategory>;
     createTask(ownerPrincipal: Principal | null, client: string, taskCategory: string, subCategory: string, status: string, paymentStatus: string, assigneeName: string, captainName: string, comment: string, dueDate: Time, assignmentDate: Time, completionDate: Time, bill: bigint, advanceReceived: bigint, outstandingAmount: bigint): Promise<Task>;
     createTaskCategory(name: string): Promise<TaskCategory>;
     createTaskStatus(name: string): Promise<TaskStatus>;
-    createUser(userPrincipal: Principal, name: string, email: string): Promise<UserProfile>;
     deleteAssigneeCaptainPair(assignee: string): Promise<void>;
-    deleteTask(taskId: string): Promise<void>;
-    deleteUser(user: Principal): Promise<void>;
-    filterTasksByAssigneeName(assigneeName: string): Promise<Array<Task>>;
-    filterTasksByCaptainName(captainName: string): Promise<Array<Task>>;
-    filterTasksByCategory(category: string): Promise<Array<Task>>;
-    filterTasksByClient(clientId: string): Promise<Array<Task>>;
-    filterTasksByPaymentStatus(paymentStatus: string): Promise<Array<Task>>;
-    filterTasksByStatus(status: string): Promise<Array<Task>>;
-    filterTasksBySubCategory(subCategory: string): Promise<Array<Task>>;
     getAssigneeCaptainDirectory(): Promise<Array<[string, string]>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
@@ -191,21 +190,15 @@ export interface backendInterface {
     getSubCategories(): Promise<Array<SubCategory>>;
     getTask(taskId: string): Promise<Task | null>;
     getTaskCategories(): Promise<Array<TaskCategory>>;
-    getTaskCountsPerCategory(): Promise<Array<[string, bigint]>>;
-    getTaskCountsPerPaymentStatus(): Promise<Array<[string, bigint]>>;
-    getTaskCountsPerStatus(): Promise<Array<[string, bigint]>>;
     getTaskStatuses(): Promise<Array<TaskStatus>>;
     getTasks(): Promise<Array<Task>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
-    getUserRole(user: Principal): Promise<UserRole>;
     isCallerAdmin(): Promise<boolean>;
-    listAllUsers(): Promise<Array<UserProfile>>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
-    setUserRole(user: Principal, role: UserRole): Promise<void>;
     updateAssigneeCaptainPair(assignee: string, update: AssigneeCaptainUpdate): Promise<void>;
     updateTask(taskId: string, client: string, taskCategory: string, subCategory: string, status: string, paymentStatus: string, assigneeName: string, captainName: string, comment: string, dueDate: Time, assignmentDate: Time, completionDate: Time, bill: bigint, advanceReceived: bigint, outstandingAmount: bigint): Promise<Task>;
 }
-import type { Task as _Task, UserProfile as _UserProfile, UserRole as _UserRole, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
+import type { BulkTaskUpdateInput as _BulkTaskUpdateInput, Task as _Task, UserProfile as _UserProfile, UserRole as _UserRole, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _caffeineStorageBlobIsLive(arg0: Uint8Array): Promise<boolean> {
@@ -334,17 +327,31 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async bulkCreateTasks(arg0: Array<[Principal, string, string, string, string, string, string, string, string, Time, Time, Time, bigint, bigint, bigint]>): Promise<Array<Task>> {
+    async bulkDeleteAssigneeCaptainPairs(arg0: Array<string>): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.bulkCreateTasks(arg0);
+                const result = await this.actor.bulkDeleteAssigneeCaptainPairs(arg0);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.bulkCreateTasks(arg0);
+            const result = await this.actor.bulkDeleteAssigneeCaptainPairs(arg0);
+            return result;
+        }
+    }
+    async bulkDeleteTasks(arg0: Array<string>): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.bulkDeleteTasks(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.bulkDeleteTasks(arg0);
             return result;
         }
     }
@@ -359,6 +366,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.bulkUpdateAssigneeCaptainPairs(arg0);
+            return result;
+        }
+    }
+    async bulkUpdateTasks(arg0: BulkTaskUpdateInput): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.bulkUpdateTasks(to_candid_BulkTaskUpdateInput_n10(this._uploadFile, this._downloadFile, arg0));
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.bulkUpdateTasks(to_candid_BulkTaskUpdateInput_n10(this._uploadFile, this._downloadFile, arg0));
             return result;
         }
     }
@@ -393,14 +414,14 @@ export class Backend implements backendInterface {
     async createTask(arg0: Principal | null, arg1: string, arg2: string, arg3: string, arg4: string, arg5: string, arg6: string, arg7: string, arg8: string, arg9: Time, arg10: Time, arg11: Time, arg12: bigint, arg13: bigint, arg14: bigint): Promise<Task> {
         if (this.processError) {
             try {
-                const result = await this.actor.createTask(to_candid_opt_n10(this._uploadFile, this._downloadFile, arg0), arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14);
+                const result = await this.actor.createTask(to_candid_opt_n14(this._uploadFile, this._downloadFile, arg0), arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.createTask(to_candid_opt_n10(this._uploadFile, this._downloadFile, arg0), arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14);
+            const result = await this.actor.createTask(to_candid_opt_n14(this._uploadFile, this._downloadFile, arg0), arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14);
             return result;
         }
     }
@@ -432,20 +453,6 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async createUser(arg0: Principal, arg1: string, arg2: string): Promise<UserProfile> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.createUser(arg0, arg1, arg2);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.createUser(arg0, arg1, arg2);
-            return result;
-        }
-    }
     async deleteAssigneeCaptainPair(arg0: string): Promise<void> {
         if (this.processError) {
             try {
@@ -457,132 +464,6 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.deleteAssigneeCaptainPair(arg0);
-            return result;
-        }
-    }
-    async deleteTask(arg0: string): Promise<void> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.deleteTask(arg0);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.deleteTask(arg0);
-            return result;
-        }
-    }
-    async deleteUser(arg0: Principal): Promise<void> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.deleteUser(arg0);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.deleteUser(arg0);
-            return result;
-        }
-    }
-    async filterTasksByAssigneeName(arg0: string): Promise<Array<Task>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.filterTasksByAssigneeName(arg0);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.filterTasksByAssigneeName(arg0);
-            return result;
-        }
-    }
-    async filterTasksByCaptainName(arg0: string): Promise<Array<Task>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.filterTasksByCaptainName(arg0);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.filterTasksByCaptainName(arg0);
-            return result;
-        }
-    }
-    async filterTasksByCategory(arg0: string): Promise<Array<Task>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.filterTasksByCategory(arg0);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.filterTasksByCategory(arg0);
-            return result;
-        }
-    }
-    async filterTasksByClient(arg0: string): Promise<Array<Task>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.filterTasksByClient(arg0);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.filterTasksByClient(arg0);
-            return result;
-        }
-    }
-    async filterTasksByPaymentStatus(arg0: string): Promise<Array<Task>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.filterTasksByPaymentStatus(arg0);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.filterTasksByPaymentStatus(arg0);
-            return result;
-        }
-    }
-    async filterTasksByStatus(arg0: string): Promise<Array<Task>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.filterTasksByStatus(arg0);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.filterTasksByStatus(arg0);
-            return result;
-        }
-    }
-    async filterTasksBySubCategory(arg0: string): Promise<Array<Task>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.filterTasksBySubCategory(arg0);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.filterTasksBySubCategory(arg0);
             return result;
         }
     }
@@ -604,28 +485,28 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerUserProfile();
-                return from_candid_opt_n11(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n15(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerUserProfile();
-            return from_candid_opt_n11(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n15(this._uploadFile, this._downloadFile, result);
         }
     }
     async getCallerUserRole(): Promise<UserRole> {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerUserRole();
-                return from_candid_UserRole_n12(this._uploadFile, this._downloadFile, result);
+                return from_candid_UserRole_n16(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerUserRole();
-            return from_candid_UserRole_n12(this._uploadFile, this._downloadFile, result);
+            return from_candid_UserRole_n16(this._uploadFile, this._downloadFile, result);
         }
     }
     async getPaymentStatuses(): Promise<Array<PaymentStatus>> {
@@ -660,14 +541,14 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getTask(arg0);
-                return from_candid_opt_n14(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n18(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getTask(arg0);
-            return from_candid_opt_n14(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n18(this._uploadFile, this._downloadFile, result);
         }
     }
     async getTaskCategories(): Promise<Array<TaskCategory>> {
@@ -681,48 +562,6 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.getTaskCategories();
-            return result;
-        }
-    }
-    async getTaskCountsPerCategory(): Promise<Array<[string, bigint]>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getTaskCountsPerCategory();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getTaskCountsPerCategory();
-            return result;
-        }
-    }
-    async getTaskCountsPerPaymentStatus(): Promise<Array<[string, bigint]>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getTaskCountsPerPaymentStatus();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getTaskCountsPerPaymentStatus();
-            return result;
-        }
-    }
-    async getTaskCountsPerStatus(): Promise<Array<[string, bigint]>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getTaskCountsPerStatus();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getTaskCountsPerStatus();
             return result;
         }
     }
@@ -758,28 +597,14 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getUserProfile(arg0);
-                return from_candid_opt_n11(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n15(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getUserProfile(arg0);
-            return from_candid_opt_n11(this._uploadFile, this._downloadFile, result);
-        }
-    }
-    async getUserRole(arg0: Principal): Promise<UserRole> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getUserRole(arg0);
-                return from_candid_UserRole_n12(this._uploadFile, this._downloadFile, result);
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getUserRole(arg0);
-            return from_candid_UserRole_n12(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n15(this._uploadFile, this._downloadFile, result);
         }
     }
     async isCallerAdmin(): Promise<boolean> {
@@ -796,20 +621,6 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async listAllUsers(): Promise<Array<UserProfile>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.listAllUsers();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.listAllUsers();
-            return result;
-        }
-    }
     async saveCallerUserProfile(arg0: UserProfile): Promise<void> {
         if (this.processError) {
             try {
@@ -821,20 +632,6 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.saveCallerUserProfile(arg0);
-            return result;
-        }
-    }
-    async setUserRole(arg0: Principal, arg1: UserRole): Promise<void> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.setUserRole(arg0, to_candid_UserRole_n8(this._uploadFile, this._downloadFile, arg1));
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.setUserRole(arg0, to_candid_UserRole_n8(this._uploadFile, this._downloadFile, arg1));
             return result;
         }
     }
@@ -867,16 +664,16 @@ export class Backend implements backendInterface {
         }
     }
 }
-function from_candid_UserRole_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
-    return from_candid_variant_n13(_uploadFile, _downloadFile, value);
+function from_candid_UserRole_n16(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
+    return from_candid_variant_n17(_uploadFile, _downloadFile, value);
 }
 function from_candid__CaffeineStorageRefillResult_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: __CaffeineStorageRefillResult): _CaffeineStorageRefillResult {
     return from_candid_record_n5(_uploadFile, _downloadFile, value);
 }
-function from_candid_opt_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
+function from_candid_opt_n15(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n14(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_Task]): Task | null {
+function from_candid_opt_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_Task]): Task | null {
     return value.length === 0 ? null : value[0];
 }
 function from_candid_opt_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [boolean]): boolean | null {
@@ -897,7 +694,7 @@ function from_candid_record_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint
         topped_up_amount: record_opt_to_undefined(from_candid_opt_n7(_uploadFile, _downloadFile, value.topped_up_amount))
     };
 }
-function from_candid_variant_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n17(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     admin: null;
 } | {
     user: null;
@@ -905,6 +702,9 @@ function from_candid_variant_n13(_uploadFile: (file: ExternalBlob) => Promise<Ui
     guest: null;
 }): UserRole {
     return "admin" in value ? UserRole.admin : "user" in value ? UserRole.user : "guest" in value ? UserRole.guest : value;
+}
+function to_candid_BulkTaskUpdateInput_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: BulkTaskUpdateInput): _BulkTaskUpdateInput {
+    return to_candid_record_n11(_uploadFile, _downloadFile, value);
 }
 function to_candid_UserRole_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {
     return to_candid_variant_n9(_uploadFile, _downloadFile, value);
@@ -915,8 +715,40 @@ function to_candid__CaffeineStorageRefillInformation_n2(_uploadFile: (file: Exte
 function to_candid_opt_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _CaffeineStorageRefillInformation | null): [] | [__CaffeineStorageRefillInformation] {
     return value === null ? candid_none() : candid_some(to_candid__CaffeineStorageRefillInformation_n2(_uploadFile, _downloadFile, value));
 }
-function to_candid_opt_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Principal | null): [] | [Principal] {
+function to_candid_opt_n14(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Principal | null): [] | [Principal] {
     return value === null ? candid_none() : candid_some(value);
+}
+function to_candid_record_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    updates: Array<{
+        status?: string;
+        paymentStatus?: string;
+        taskId: string;
+    }>;
+}): {
+    updates: Array<{
+        status: [] | [string];
+        paymentStatus: [] | [string];
+        taskId: string;
+    }>;
+} {
+    return {
+        updates: to_candid_vec_n12(_uploadFile, _downloadFile, value.updates)
+    };
+}
+function to_candid_record_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    status?: string;
+    paymentStatus?: string;
+    taskId: string;
+}): {
+    status: [] | [string];
+    paymentStatus: [] | [string];
+    taskId: string;
+} {
+    return {
+        status: value.status ? candid_some(value.status) : candid_none(),
+        paymentStatus: value.paymentStatus ? candid_some(value.paymentStatus) : candid_none(),
+        taskId: value.taskId
+    };
 }
 function to_candid_record_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     proposed_top_up_amount?: bigint;
@@ -941,6 +773,17 @@ function to_candid_variant_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8
     } : value == UserRole.guest ? {
         guest: null
     } : value;
+}
+function to_candid_vec_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<{
+    status?: string;
+    paymentStatus?: string;
+    taskId: string;
+}>): Array<{
+    status: [] | [string];
+    paymentStatus: [] | [string];
+    taskId: string;
+}> {
+    return value.map((x)=>to_candid_record_n13(_uploadFile, _downloadFile, x));
 }
 export interface CreateActorOptions {
     agent?: Agent;

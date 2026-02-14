@@ -1,34 +1,62 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-14T06:47:40.137Z",
-  "summary": "Diff adds US currency formatting utility, updates Dashboard to compute and display Total Revenue, and updates TaskDetailDialog (and likely TasksPage) to display per-task Revenue. Dashboard drill-down handlers for category/status/payment status are present, and a stateful TaskDetailDialog setup remains.",
+  "generatedAt": "2026-02-14T09:47:15.885Z",
+  "summary": "The diff improves the load error UI, adds reconnection/timeout handling around actor fetching, and introduces redacted diagnostics logging. However, it does not provide clear evidence that the underlying frontend actor initialization was updated to always use the currently deployed backend canister ID, nor that a `backendCanisterId` override is actually applied during actor creation or fully cleared by the reset action.",
   "missing_requirements": [
     {
-      "id": "REQ-33",
-      "requirement": "Make the Dashboard \"Total Tasks\" card clickable to open TaskDetailDialog showing all tasks, with clear English title/description indicating all tasks.",
-      "reason": "The provided Dashboard.tsx snippet shows state and handlers for category/status/payment status drill-down, and the file summary claims Total Tasks is clickable, but the truncated diff excerpt does not include the actual \"Total Tasks\" card implementation or the specific click handler and dialog title/description for the all-tasks view.",
+      "id": "REQ-1",
+      "requirement": "Audit and fix the frontend backend-actor initialization so the production frontend always targets the currently deployed backend canister ID (eliminate stale/mismatched canister IDs and stale generated declarations as causes of the 'Unable to Load' screen).",
+      "reason": "The diff does not show any changes to the actual backend actor initialization (e.g., the code that selects the canister ID / imports generated declarations / constructs the actor). Changes are centered on retry UI and wrapper logic (`useSafeActor`) rather than the source of truth for canister ID resolution used by actor creation.",
       "evidence": [
-        "frontend/src/pages/Dashboard.tsx (truncated)"
+        "frontend/src/hooks/useSafeActor.ts",
+        "frontend-file-summaries.txt (shows frontend/src/App.tsx exists but no diff provided; no evidence of actor-init fix)",
+        "frontend-file-summaries.txt (mentions useActor exists via useSafeActor import, but no diff for useActor)"
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "requirement": "If a user-configurable backend canister override is supported via session/URL parameters (e.g., the existing session key `backendCanisterId`), ensure it is actually respected by actor creation and that the 'Reset Connection Settings' action fully clears it and restores default behavior.",
+      "reason": "The diff shows `useSafeActor` checking whether an override exists only to label logs (`usingOverride`), but there is no evidence that actor creation uses the override value. Also, while the error screen includes a 'Reset Connection Settings' button prop, the diff does not show implementation that clears `backendCanisterId` from sessionStorage (or other init parameters) and reloads.",
+      "evidence": [
+        "frontend/src/hooks/useSafeActor.ts (uses getBackendCanisterIdOverride() only for logging; actor creation not shown/changed)",
+        "frontend/src/components/AppLoadErrorScreen.tsx (button exists but no clearing logic shown)",
+        "frontend/src/utils/urlParams.ts (includes clearSessionParameter utility, but no evidence it is invoked by reset action)"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "requirement": "Improve connection diagnostics for this failure mode by logging (redacted) connection metadata during actor creation failures to help confirm whether the issue is a canister ID mismatch vs. network/unavailable backend, without exposing sensitive values.",
+      "reason": "Diagnostics utilities were added and reconnection attempts are logged with 'default vs override' labeling, but the diff does not show logging being wired specifically to an actual actor creation failure path (e.g., catching actor creation errors and logging resolved canister target). `useSafeActor` creates a generic `Failed to create backend actor` error without attaching/logging the resolved canister ID or target on failure.",
+      "evidence": [
+        "frontend/src/utils/diagnostics.ts (redaction + reconnect attempt/success logs)",
+        "frontend/src/hooks/useSafeActor.ts (creates generic actorError; does not call logInitFailure('actor-creation', ...))"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Add a Revenue column / currency formatting usage in the main Tasks page task list (TasksPage), beyond the explicitly requested Dashboard KPI and TaskDetailDialog column.",
-      "reason": "REQ-34 explicitly calls out adding a new Dashboard KPI card and updating the Dashboard task list dialog table (TaskDetailDialog). The diff shows TasksPage.tsx importing formatCurrency, implying additional revenue formatting/column changes on that page.",
+      "description": "Automatic actor initialization timeout (15s) and multi-attempt reconnection logic with a max attempts threshold and fallback-to-reload signaling.",
+      "reason": "The BuildRequest asked to fix canister ID mismatch/override handling and add diagnostics; it did not request adding new retry/timeout/reconnection behaviors or attempt limits as part of the product UX.",
       "evidence": [
-        "frontend/src/pages/TasksPage.tsx"
+        "frontend/src/hooks/useSafeActor.ts (ACTOR_TIMEOUT_MS, MAX_RECONNECT_ATTEMPTS, reconnect(), shouldFallbackToReload)"
+      ]
+    },
+    {
+      "description": "Expanded 'Unable to Load' screen UX with multiple recovery modes, loading spinner state, and a specific 'Maximum reconnection attempts reached' alert block.",
+      "reason": "The BuildRequest constrained changes to connectivity and diagnostics; it did not request new UI/UX behaviors beyond ensuring reset clears override and keeping English-only safe messaging.",
+      "evidence": [
+        "frontend/src/components/AppLoadErrorScreen.tsx (Retry Connection button with loading state; fallback alert; reset option rendering)"
       ]
     }
   ],
-  "confidence": 0.62,
+  "confidence": 0.74,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/components/TaskDetailDialog.tsx",
-    "frontend/src/pages/Dashboard.tsx",
-    "frontend/src/pages/TasksPage.tsx",
-    "frontend/src/utils/currency.ts",
+    "frontend/src/components/AppLoadErrorScreen.tsx",
+    "frontend/src/hooks/useSafeActor.ts",
+    "frontend/src/utils/diagnostics.ts",
+    "frontend/src/utils/urlParams.ts",
     "project_state.json"
   ]
 }

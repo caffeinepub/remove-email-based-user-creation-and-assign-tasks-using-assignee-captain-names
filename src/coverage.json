@@ -1,7 +1,7 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-14T06:47:40.140Z",
+  "generatedAt": "2026-02-14T09:47:15.888Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
@@ -11,44 +11,42 @@
     "implemented": 3,
     "items": [
       {
-        "id": "REQ-33",
-        "summary": "Update the Dashboard (frontend/src/pages/Dashboard.tsx) so the \"Total Tasks\" summary card is clickable and opens the existing TaskDetailDialog showing all tasks (same behavior as the existing clickable summary cards for Categories/Statuses/Payment Types).",
+        "id": "REQ-1",
+        "summary": "Audit and fix the frontend backend-actor initialization so the production frontend always targets the currently deployed backend canister ID (eliminate stale/mismatched canister IDs and stale generated declarations as causes of the 'Unable to Load' screen).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/Dashboard.tsx",
-          "frontend/src/components/TaskDetailDialog.tsx"
+          "frontend/src/hooks/useActor.ts",
+          "frontend/src/hooks/useSafeActor.ts",
+          "frontend/src/components/AppBootstrap.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/Dashboard.tsx",
-          "frontend/src/components/TaskDetailDialog.tsx"
+          "frontend/src/hooks/useSafeActor.ts"
         ]
       },
       {
-        "id": "REQ-34",
-        "summary": "Add revenue reporting to the Dashboard and task list views using existing task financial fields. Specifically: (1) add a new Dashboard KPI card that displays \"Total Revenue\" computed as the sum of task.bill across the currently loaded tasks; and (2) update the Dashboard task list dialog table (frontend/src/components/TaskDetailDialog.tsx) to include a \"Revenue\" (Bill) column per task, formatted as currency.",
+        "id": "REQ-2",
+        "summary": "If a user-configurable backend canister override is supported via session/URL parameters (e.g., the existing session key `backendCanisterId`), ensure it is actually respected by actor creation and that the 'Reset Connection Settings' action fully clears it and restores default behavior.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/utils/currency.ts",
-          "frontend/src/pages/Dashboard.tsx",
-          "frontend/src/components/TaskDetailDialog.tsx",
-          "frontend/src/pages/TasksPage.tsx"
+          "frontend/src/utils/urlParams.ts",
+          "frontend/src/hooks/useActor.ts",
+          "frontend/src/components/AppLoadErrorScreen.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/utils/currency.ts",
-          "frontend/src/pages/Dashboard.tsx",
-          "frontend/src/components/TaskDetailDialog.tsx",
-          "frontend/src/pages/TasksPage.tsx"
+          "frontend/src/utils/urlParams.ts",
+          "frontend/src/components/AppLoadErrorScreen.tsx"
         ]
       },
       {
-        "id": "REQ-35",
-        "summary": "Ensure the Payment Status analytics and drill-down remain intact after the Dashboard updates: the \"Payment Status Distribution\" visualization must still render, and clicking a payment status must still open the TaskDetailDialog pre-filtered to tasks with that payment status.",
+        "id": "REQ-3",
+        "summary": "Improve connection diagnostics for this failure mode by logging (redacted) connection metadata during actor creation failures to help confirm whether the issue is a canister ID mismatch vs. network/unavailable backend, without exposing sensitive values.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/Dashboard.tsx"
+          "frontend/src/utils/diagnostics.ts",
+          "frontend/src/hooks/useActor.ts"
         ],
         "matchedFiles": [
-          "frontend/src/pages/Dashboard.tsx"
+          "frontend/src/utils/diagnostics.ts"
         ]
       }
     ]
@@ -58,10 +56,10 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/TaskDetailDialog.tsx",
-    "frontend/src/pages/Dashboard.tsx",
-    "frontend/src/pages/TasksPage.tsx",
-    "frontend/src/utils/currency.ts",
+    "frontend/src/components/AppLoadErrorScreen.tsx",
+    "frontend/src/hooks/useSafeActor.ts",
+    "frontend/src/utils/diagnostics.ts",
+    "frontend/src/utils/urlParams.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

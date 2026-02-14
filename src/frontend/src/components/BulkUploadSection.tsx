@@ -130,7 +130,23 @@ export default function BulkUploadSection() {
       // Get the current user's principal to assign as owner
       const ownerPrincipal = identity.getPrincipal();
 
-      const tasksData: Array<[typeof ownerPrincipal, string, string, string, string, string, string, string, string, bigint, bigint, bigint, bigint, bigint, bigint]> = [];
+      const tasksData: Array<{
+        ownerPrincipal: typeof ownerPrincipal;
+        client: string;
+        taskCategory: string;
+        subCategory: string;
+        status: string;
+        paymentStatus: string;
+        assigneeName: string;
+        captainName: string;
+        comment: string;
+        dueDate: bigint;
+        assignmentDate: bigint;
+        completionDate: bigint;
+        bill: bigint;
+        advanceReceived: bigint;
+        outstandingAmount: bigint;
+      }> = [];
 
       for (let i = 1; i < rows.length; i++) {
         const row = rows[i];
@@ -160,10 +176,10 @@ export default function BulkUploadSection() {
         const advanceReceived = advanceIndex !== -1 ? parseAmount(row[advanceIndex]) : BigInt(0);
         const outstandingAmount = outstandingIndex !== -1 ? parseAmount(row[outstandingIndex]) : BigInt(0);
 
-        tasksData.push([
+        tasksData.push({
           ownerPrincipal,
           client,
-          category,
+          taskCategory: category,
           subCategory,
           status,
           paymentStatus,
@@ -176,7 +192,7 @@ export default function BulkUploadSection() {
           bill,
           advanceReceived,
           outstandingAmount,
-        ]);
+        });
       }
 
       if (tasksData.length === 0) {

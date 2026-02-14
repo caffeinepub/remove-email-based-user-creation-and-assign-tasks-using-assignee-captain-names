@@ -1,75 +1,77 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Dashboard drill-down for All Tasks, revenue KPI, and revenue columns",
+  "title": "Fix production actor initialization canister ID mismatch and improve load diagnostics",
   "requirements": [
     {
-      "id": "REQ-33",
-      "summary": "Make the Dashboard \"Total Tasks\" KPI card clickable to open the existing TaskDetailDialog with all tasks loaded by useGetTasks().",
+      "id": "REQ-1",
+      "summary": "Ensure frontend actor initialization always targets the currently deployed backend canister ID in production and avoids stale/hardcoded IDs.",
       "acceptanceCriteria": [
-        "On the Dashboard, clicking the \"Total Tasks\" card opens the TaskDetailDialog.",
-        "The dialog title/description clearly indicates it is showing all tasks (English text).",
-        "The dialog shows the full list of tasks currently returned by useGetTasks(), and row click still opens the task details tab as it does today."
+        "After deploying, the app no longer lands on the 'Unable to Load' screen due to actor creation failures when opened in production.",
+        "The frontend actor is created successfully and initialization proceeds to profile/admin queries without throwing a canister-routing error (e.g., 'canister not found', 'missing canister', route to wrong canister).",
+        "If the project supports a generated declarations import for the backend canister, the frontend is confirmed to be using the latest generated canister ID (not a hardcoded/stale value)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/Dashboard.tsx",
+          "path": "frontend/src/hooks/useActor.ts",
           "operation": "modify",
-          "description": "Update the \"Total Tasks\" Card to match the existing clickable summary-card behavior (cursor/hover styling and onClick). On click, open TaskDetailDialog with the full tasks list from useGetTasks(), and set an English title/description indicating it is showing all tasks."
+          "description": "Audit and fix actor creation to resolve the backend canister target at runtime (default deployed ID vs override), and pass the resolved canister target into actor creation so production does not rely on stale/mismatched IDs."
         },
         {
-          "path": "frontend/src/components/TaskDetailDialog.tsx",
+          "path": "frontend/src/hooks/useSafeActor.ts",
           "operation": "modify",
-          "description": "Confirm TaskDetailDialog list-tab behavior remains unchanged for the all-tasks case (shows provided tasks prop and row click still calls openTaskTab), adjusting only as needed to support the updated Dashboard drill-down."
+          "description": "Ensure actor recreation/retry logic fully re-runs canister target resolution (not cached to a stale canister ID) when reconnecting and when identity changes."
+        },
+        {
+          "path": "frontend/src/components/AppBootstrap.tsx",
+          "operation": "modify",
+          "description": "Confirm actor-failure handling remains focused on connectivity issues (no unrelated feature changes) and that recovery actions trigger a clean actor re-init path after deploy."
         }
       ]
     },
     {
-      "id": "REQ-34",
-      "summary": "Add revenue reporting: a Dashboard \"Total Revenue\" KPI computed from task.bill and a Revenue column in the Dashboard TaskDetailDialog task list, formatted as en-US currency.",
+      "id": "REQ-2",
+      "summary": "Respect user-configurable backend canister override (backendCanisterId) and ensure Reset Connection Settings fully clears it and restores defaults.",
       "acceptanceCriteria": [
-        "Dashboard shows a new KPI card labeled \"Total Revenue\" with the sum of bill across tasks (English text).",
-        "If there are no tasks, \"Total Revenue\" displays $0.00 (or equivalent zero currency formatting).",
-        "TaskDetailDialog’s task list table includes a \"Revenue\" column populated from task.bill for each row.",
-        "Revenue values are displayed in a consistent English/US currency format (e.g., $1,234.00).",
-        "No backend API changes are required for the revenue display; values come from the existing Task fields returned by getTasks/filter APIs."
+        "When `backendCanisterId` is set (URL/hash or sessionStorage), actor creation uses that value; when it is not set, actor creation uses the default deployed canister ID.",
+        "Using the existing 'Reset Connection Settings' action clears `backendCanisterId` from sessionStorage (along with other initialization parameters) and reloads cleanly.",
+        "The error screen continues to show English-only user-facing text and does not expose secrets (e.g., tokens) in UI."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/utils/currency.ts",
-          "operation": "create",
-          "description": "Add a small currency-formatting helper for consistent en-US currency display (e.g., formatting bigint/number values like task.bill and total sums)."
+          "path": "frontend/src/utils/urlParams.ts",
+          "operation": "modify",
+          "description": "Add/verify a single source of truth for connection-related persisted parameters: read `backendCanisterId` from URL/session (URL takes precedence), and implement/verify `clearAllInitializationParameters()` clears `backendCanisterId` and other initialization parameters used by bootstrapping."
         },
         {
-          "path": "frontend/src/pages/Dashboard.tsx",
+          "path": "frontend/src/hooks/useActor.ts",
           "operation": "modify",
-          "description": "Compute Total Revenue as the sum of task.bill across the currently loaded tasks from useGetTasks(), format it as en-US currency, and render a new KPI Card labeled \"Total Revenue\". Ensure the zero-tasks case renders $0.00. Adjust the KPI grid layout as needed to accommodate the additional card without breaking existing cards."
+          "description": "Update actor creation to actually consume the resolved `backendCanisterId` override (if present) and fall back to the default deployed backend canister ID when absent; ensure the override is not accidentally ignored during authenticated/anonymous actor creation."
         },
         {
-          "path": "frontend/src/components/TaskDetailDialog.tsx",
+          "path": "frontend/src/components/AppLoadErrorScreen.tsx",
           "operation": "modify",
-          "description": "Add a \"Revenue\" column to the task list table in the dialog (list tab) using task.bill as the source and formatting via the shared currency helper. Keep existing row click behavior intact."
-        },
-        {
-          "path": "frontend/src/pages/TasksPage.tsx",
-          "operation": "modify",
-          "description": "Update the main Tasks list table to include a \"Revenue\" (Bill) column formatted as en-US currency using the shared currency helper, so task list views consistently show revenue."
+          "description": "Verify the existing 'Reset Connection Settings' action remains English-only and does not display any secret values; keep copy aligned with connectivity-only recovery."
         }
       ]
     },
     {
-      "id": "REQ-35",
-      "summary": "Preserve existing Payment Status Distribution rendering and payment-status drill-down to TaskDetailDialog after Dashboard updates.",
+      "id": "REQ-3",
+      "summary": "Improve connection diagnostics for actor creation failures by logging redacted connection metadata that distinguishes canister ID mismatch vs network/unavailable backend.",
       "acceptanceCriteria": [
-        "Payment Status chart still renders on the Dashboard when payment status data exists.",
-        "Clicking any payment status bar/segment still opens the TaskDetailDialog with the correct filtered task list.",
-        "If the payment-status filter query fails, the dialog shows an English error description (existing behavior is acceptable)."
+        "On actor creation failure, console diagnostics include a clear, redacted hint about the resolved backend canister target (e.g., 'using default ID' vs 'using override') without printing raw tokens.",
+        "No secrets (e.g., `caffeineAdminToken`) appear in console output due to diagnostics logging."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/Dashboard.tsx",
+          "path": "frontend/src/utils/diagnostics.ts",
           "operation": "modify",
-          "description": "While adding the clickable Total Tasks card and Total Revenue KPI, ensure the existing Payment Status Distribution visualization and its click handler remain wired to the current filter-by-payment-status flow and continue to open TaskDetailDialog with filtered tasks; preserve existing error description behavior on failures."
+          "description": "Extend diagnostics helpers to support structured, redacted logging for actor creation failures, including (a) whether the backend target came from default vs override and (b) a safely redacted canister identifier and basic network context; ensure redaction explicitly prevents leaking `caffeineAdminToken`."
+        },
+        {
+          "path": "frontend/src/hooks/useActor.ts",
+          "operation": "modify",
+          "description": "Wrap actor creation and access-control initialization with failure diagnostics that emit the redacted connection metadata (default vs override, redacted canister target) on failure, without logging any secret parameters or identity details."
         }
       ]
     }

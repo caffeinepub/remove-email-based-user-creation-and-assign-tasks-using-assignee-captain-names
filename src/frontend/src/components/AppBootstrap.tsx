@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useGetCallerUserProfile, useIsCallerAdmin } from '../hooks/useQueries';
 import { useSafeActor } from '../hooks/useSafeActor';
@@ -6,18 +6,27 @@ import AppLoadErrorScreen from './AppLoadErrorScreen';
 import AccessDeniedScreen from './AccessDeniedScreen';
 import ProfileSetupModal from './ProfileSetupModal';
 import { logInitFailure, logInitSuccess } from '../utils/diagnostics';
-import { useEffect } from 'react';
+import { clearAllInitializationParameters } from '../utils/urlParams';
 
 interface AppBootstrapProps {
   children: (props: { userProfile: any; isAdmin: boolean }) => ReactNode;
 }
 
 /**
- * Handles authenticated app initialization with proper error handling and timeouts
+ * Handles authenticated app initialization with proper error handling, timeouts, and recovery actions
+ * Supports actor reconnection via recreation and session parameter reset with fallback to page reload
  */
 export default function AppBootstrap({ children }: AppBootstrapProps) {
   const { identity, isInitializing, isLoginError } = useInternetIdentity();
-  const { actor, isFetching: actorFetching, error: actorError, refetch: refetchActor } = useSafeActor();
+  
+  const { 
+    actor, 
+    isFetching: actorFetching, 
+    error: actorError, 
+    isReconnecting,
+    reconnect,
+    shouldFallbackToReload 
+  } = useSafeActor();
   
   const { 
     data: userProfile, 
@@ -78,12 +87,35 @@ export default function AppBootstrap({ children }: AppBootstrapProps) {
     return <AccessDeniedScreen />;
   }
 
-  // Handle actor creation errors
+  // Handle actor creation errors with recovery options
   if (actorError) {
+    const handleActorRetry = () => {
+      if (shouldFallbackToReload) {
+        console.log('[AppBootstrap] Max reconnection attempts reached, falling back to page reload...');
+        window.location.reload();
+        return;
+      }
+      
+      console.log('[AppBootstrap] Attempting actor reconnection via recreation...');
+      reconnect();
+    };
+
+    const handleResetAndRetry = () => {
+      console.log('[AppBootstrap] Clearing cached connection settings and reloading...');
+      clearAllInitializationParameters();
+      // Full reload to ensure clean state
+      window.location.reload();
+    };
+
     return (
       <AppLoadErrorScreen
         message="Failed to connect to the backend service."
-        onRetry={refetchActor}
+        detailedMessage="The backend may not be deployed yet, or there may be a configuration mismatch. Try reconnecting or reset your connection settings."
+        onRetry={handleActorRetry}
+        onResetAndRetry={handleResetAndRetry}
+        showResetOption={true}
+        isReconnecting={isReconnecting}
+        shouldFallbackToReload={shouldFallbackToReload}
       />
     );
   }

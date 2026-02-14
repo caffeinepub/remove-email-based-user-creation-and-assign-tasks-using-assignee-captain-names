@@ -18,6 +18,15 @@ export interface AssigneeCaptainUpdate {
   'assignee' : string,
   'captain' : string,
 }
+export interface BulkTaskUpdateInput {
+  'updates' : Array<
+    {
+      'status' : [] | [string],
+      'paymentStatus' : [] | [string],
+      'taskId' : string,
+    }
+  >,
+}
 export interface PaymentStatus { 'id' : string, 'name' : string }
 export interface SubCategory {
   'id' : string,
@@ -85,34 +94,13 @@ export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'addAssigneeCaptainPair' : ActorMethod<[AssigneeCaptainInput], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
-  'bulkCreateTasks' : ActorMethod<
-    [
-      Array<
-        [
-          Principal,
-          string,
-          string,
-          string,
-          string,
-          string,
-          string,
-          string,
-          string,
-          Time,
-          Time,
-          Time,
-          bigint,
-          bigint,
-          bigint,
-        ]
-      >,
-    ],
-    Array<Task>
-  >,
+  'bulkDeleteAssigneeCaptainPairs' : ActorMethod<[Array<string>], undefined>,
+  'bulkDeleteTasks' : ActorMethod<[Array<string>], undefined>,
   'bulkUpdateAssigneeCaptainPairs' : ActorMethod<
     [Array<AssigneeCaptainInput>],
     undefined
   >,
+  'bulkUpdateTasks' : ActorMethod<[BulkTaskUpdateInput], undefined>,
   'createPaymentStatus' : ActorMethod<[string], PaymentStatus>,
   'createSubCategory' : ActorMethod<[string, TaskCategory], SubCategory>,
   'createTask' : ActorMethod<
@@ -137,17 +125,7 @@ export interface _SERVICE {
   >,
   'createTaskCategory' : ActorMethod<[string], TaskCategory>,
   'createTaskStatus' : ActorMethod<[string], TaskStatus>,
-  'createUser' : ActorMethod<[Principal, string, string], UserProfile>,
   'deleteAssigneeCaptainPair' : ActorMethod<[string], undefined>,
-  'deleteTask' : ActorMethod<[string], undefined>,
-  'deleteUser' : ActorMethod<[Principal], undefined>,
-  'filterTasksByAssigneeName' : ActorMethod<[string], Array<Task>>,
-  'filterTasksByCaptainName' : ActorMethod<[string], Array<Task>>,
-  'filterTasksByCategory' : ActorMethod<[string], Array<Task>>,
-  'filterTasksByClient' : ActorMethod<[string], Array<Task>>,
-  'filterTasksByPaymentStatus' : ActorMethod<[string], Array<Task>>,
-  'filterTasksByStatus' : ActorMethod<[string], Array<Task>>,
-  'filterTasksBySubCategory' : ActorMethod<[string], Array<Task>>,
   'getAssigneeCaptainDirectory' : ActorMethod<[], Array<[string, string]>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
@@ -155,17 +133,11 @@ export interface _SERVICE {
   'getSubCategories' : ActorMethod<[], Array<SubCategory>>,
   'getTask' : ActorMethod<[string], [] | [Task]>,
   'getTaskCategories' : ActorMethod<[], Array<TaskCategory>>,
-  'getTaskCountsPerCategory' : ActorMethod<[], Array<[string, bigint]>>,
-  'getTaskCountsPerPaymentStatus' : ActorMethod<[], Array<[string, bigint]>>,
-  'getTaskCountsPerStatus' : ActorMethod<[], Array<[string, bigint]>>,
   'getTaskStatuses' : ActorMethod<[], Array<TaskStatus>>,
   'getTasks' : ActorMethod<[], Array<Task>>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
-  'getUserRole' : ActorMethod<[Principal], UserRole>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
-  'listAllUsers' : ActorMethod<[], Array<UserProfile>>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
-  'setUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'updateAssigneeCaptainPair' : ActorMethod<
     [string, AssigneeCaptainUpdate],
     undefined

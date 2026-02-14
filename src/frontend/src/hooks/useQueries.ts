@@ -1,28 +1,12 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSafeActor } from './useSafeActor';
-import type { Task, UserProfile, TaskCategory, SubCategory, TaskStatus, PaymentStatus, AssigneeCaptainInput, AssigneeCaptainUpdate, Time } from '../backend';
-import { UserRole } from '../backend';
-import { Principal } from '@dfinity/principal';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useActor } from './useActor';
 import { toast } from 'sonner';
-
-// Helper function to parse authorization errors
-function parseAuthError(error: Error): string {
-  const message = error.message;
-  if (message.includes('Unauthorized')) {
-    if (message.includes('Only admins')) {
-      return 'You need admin access for this action';
-    }
-    if (message.includes('Only users')) {
-      return 'Please complete profile setup to access this feature';
-    }
-    return message.replace('Unauthorized: ', '');
-  }
-  return message;
-}
+import type { Task, TaskCategory, SubCategory, TaskStatus, PaymentStatus, UserProfile, AssigneeCaptainInput, AssigneeCaptainUpdate, BulkTaskUpdateInput } from '../backend';
+import { Principal } from '@icp-sdk/core/principal';
 
 // User Profile Queries
 export function useGetCallerUserProfile() {
-  const { actor, isFetching: actorFetching } = useSafeActor();
+  const { actor, isFetching: actorFetching } = useActor();
 
   const query = useQuery<UserProfile | null>({
     queryKey: ['currentUserProfile'],
@@ -31,8 +15,7 @@ export function useGetCallerUserProfile() {
       return actor.getCallerUserProfile();
     },
     enabled: !!actor && !actorFetching,
-    retry: 1,
-    retryDelay: 1000,
+    retry: false,
   });
 
   return {
@@ -43,7 +26,7 @@ export function useGetCallerUserProfile() {
 }
 
 export function useSaveCallerUserProfile() {
-  const { actor } = useSafeActor();
+  const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -53,17 +36,16 @@ export function useSaveCallerUserProfile() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
-      queryClient.invalidateQueries({ queryKey: ['isCallerAdmin'] });
       toast.success('Profile saved successfully');
     },
     onError: (error: Error) => {
-      toast.error(parseAuthError(error));
+      toast.error(`Failed to save profile: ${error.message}`);
     },
   });
 }
 
 export function useIsCallerAdmin() {
-  const { actor, isFetching } = useSafeActor();
+  const { actor, isFetching } = useActor();
 
   return useQuery<boolean>({
     queryKey: ['isCallerAdmin'],
@@ -72,14 +54,12 @@ export function useIsCallerAdmin() {
       return actor.isCallerAdmin();
     },
     enabled: !!actor && !isFetching,
-    retry: 1,
-    retryDelay: 1000,
   });
 }
 
 // Task Queries
 export function useGetTasks() {
-  const { actor, isFetching } = useSafeActor();
+  const { actor, isFetching } = useActor();
 
   return useQuery<Task[]>({
     queryKey: ['tasks'],
@@ -91,50 +71,21 @@ export function useGetTasks() {
   });
 }
 
-export function useFilterTasksByCategory() {
-  const { actor } = useSafeActor();
+export function useGetTask(taskId: string) {
+  const { actor, isFetching } = useActor();
 
-  return useMutation({
-    mutationFn: async (category: string) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.filterTasksByCategory(category);
+  return useQuery<Task | null>({
+    queryKey: ['task', taskId],
+    queryFn: async () => {
+      if (!actor) return null;
+      return actor.getTask(taskId);
     },
-    onError: (error: Error) => {
-      toast.error(parseAuthError(error));
-    },
-  });
-}
-
-export function useFilterTasksByStatus() {
-  const { actor } = useSafeActor();
-
-  return useMutation({
-    mutationFn: async (status: string) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.filterTasksByStatus(status);
-    },
-    onError: (error: Error) => {
-      toast.error(parseAuthError(error));
-    },
-  });
-}
-
-export function useFilterTasksByPaymentStatus() {
-  const { actor } = useSafeActor();
-
-  return useMutation({
-    mutationFn: async (paymentStatus: string) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.filterTasksByPaymentStatus(paymentStatus);
-    },
-    onError: (error: Error) => {
-      toast.error(parseAuthError(error));
-    },
+    enabled: !!actor && !isFetching && !!taskId,
   });
 }
 
 export function useCreateTask() {
-  const { actor } = useSafeActor();
+  const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -147,13 +98,13 @@ export function useCreateTask() {
       paymentStatus: string;
       assigneeName: string;
       captainName: string;
-      comment?: string;
-      dueDate?: Time;
-      assignmentDate?: Time;
-      completionDate?: Time;
-      bill?: bigint;
-      advanceReceived?: bigint;
-      outstandingAmount?: bigint;
+      comment: string;
+      dueDate: bigint;
+      assignmentDate: bigint;
+      completionDate: bigint;
+      bill: bigint;
+      advanceReceived: bigint;
+      outstandingAmount: bigint;
     }) => {
       if (!actor) throw new Error('Actor not available');
       return actor.createTask(
@@ -165,30 +116,27 @@ export function useCreateTask() {
         data.paymentStatus,
         data.assigneeName,
         data.captainName,
-        data.comment || '',
-        data.dueDate || BigInt(0),
-        data.assignmentDate || BigInt(0),
-        data.completionDate || BigInt(0),
-        data.bill || BigInt(0),
-        data.advanceReceived || BigInt(0),
-        data.outstandingAmount || BigInt(0)
+        data.comment,
+        data.dueDate,
+        data.assignmentDate,
+        data.completionDate,
+        data.bill,
+        data.advanceReceived,
+        data.outstandingAmount
       );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['taskCountsPerCategory'] });
-      queryClient.invalidateQueries({ queryKey: ['taskCountsPerStatus'] });
-      queryClient.invalidateQueries({ queryKey: ['taskCountsPerPaymentStatus'] });
       toast.success('Task created successfully');
     },
     onError: (error: Error) => {
-      toast.error(parseAuthError(error));
+      toast.error(`Failed to create task: ${error.message}`);
     },
   });
 }
 
 export function useUpdateTask() {
-  const { actor } = useSafeActor();
+  const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -201,13 +149,13 @@ export function useUpdateTask() {
       paymentStatus: string;
       assigneeName: string;
       captainName: string;
-      comment?: string;
-      dueDate?: Time;
-      assignmentDate?: Time;
-      completionDate?: Time;
-      bill?: bigint;
-      advanceReceived?: bigint;
-      outstandingAmount?: bigint;
+      comment: string;
+      dueDate: bigint;
+      assignmentDate: bigint;
+      completionDate: bigint;
+      bill: bigint;
+      advanceReceived: bigint;
+      outstandingAmount: bigint;
     }) => {
       if (!actor) throw new Error('Actor not available');
       return actor.updateTask(
@@ -219,62 +167,141 @@ export function useUpdateTask() {
         data.paymentStatus,
         data.assigneeName,
         data.captainName,
-        data.comment || '',
-        data.dueDate || BigInt(0),
-        data.assignmentDate || BigInt(0),
-        data.completionDate || BigInt(0),
-        data.bill || BigInt(0),
-        data.advanceReceived || BigInt(0),
-        data.outstandingAmount || BigInt(0)
+        data.comment,
+        data.dueDate,
+        data.assignmentDate,
+        data.completionDate,
+        data.bill,
+        data.advanceReceived,
+        data.outstandingAmount
       );
     },
-    onSuccess: (updatedTask) => {
-      queryClient.setQueryData<Task[]>(['tasks'], (oldTasks) => {
-        if (!oldTasks) return [updatedTask];
-        return oldTasks.map((task) => 
-          task.id === updatedTask.id ? updatedTask : task
-        );
-      });
-      
-      queryClient.invalidateQueries({ queryKey: ['taskCountsPerCategory'] });
-      queryClient.invalidateQueries({ queryKey: ['taskCountsPerStatus'] });
-      queryClient.invalidateQueries({ queryKey: ['taskCountsPerPaymentStatus'] });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
       toast.success('Task updated successfully');
-      
-      return updatedTask;
     },
     onError: (error: Error) => {
-      toast.error(parseAuthError(error));
-      throw error;
+      toast.error(`Failed to update task: ${error.message}`);
     },
   });
 }
 
 export function useDeleteTask() {
-  const { actor } = useSafeActor();
+  const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (taskId: string) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.deleteTask(taskId);
+      return actor.bulkDeleteTasks([taskId]);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['taskCountsPerCategory'] });
-      queryClient.invalidateQueries({ queryKey: ['taskCountsPerStatus'] });
-      queryClient.invalidateQueries({ queryKey: ['taskCountsPerPaymentStatus'] });
       toast.success('Task deleted successfully');
     },
     onError: (error: Error) => {
-      toast.error(parseAuthError(error));
+      toast.error(`Failed to delete task: ${error.message}`);
+    },
+  });
+}
+
+export function useBulkDeleteTasks() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (taskIds: string[]) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.bulkDeleteTasks(taskIds);
+    },
+    onSuccess: (_, taskIds) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast.success(`${taskIds.length} ${taskIds.length === 1 ? 'task' : 'tasks'} deleted successfully`);
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to delete tasks: ${error.message}`);
+    },
+  });
+}
+
+export function useBulkUpdateTasks() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: BulkTaskUpdateInput) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.bulkUpdateTasks(input);
+    },
+    onSuccess: (_, input) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast.success(`${input.updates.length} ${input.updates.length === 1 ? 'task' : 'tasks'} updated successfully`);
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to update tasks: ${error.message}`);
+    },
+  });
+}
+
+export function useBulkCreateTasks() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (tasks: Array<{
+      ownerPrincipal: Principal | null;
+      client: string;
+      taskCategory: string;
+      subCategory: string;
+      status: string;
+      paymentStatus: string;
+      assigneeName: string;
+      captainName: string;
+      comment: string;
+      dueDate: bigint;
+      assignmentDate: bigint;
+      completionDate: bigint;
+      bill: bigint;
+      advanceReceived: bigint;
+      outstandingAmount: bigint;
+    }>) => {
+      if (!actor) throw new Error('Actor not available');
+      const results = await Promise.all(
+        tasks.map(task =>
+          actor.createTask(
+            task.ownerPrincipal,
+            task.client,
+            task.taskCategory,
+            task.subCategory,
+            task.status,
+            task.paymentStatus,
+            task.assigneeName,
+            task.captainName,
+            task.comment,
+            task.dueDate,
+            task.assignmentDate,
+            task.completionDate,
+            task.bill,
+            task.advanceReceived,
+            task.outstandingAmount
+          )
+        )
+      );
+      return results;
+    },
+    onSuccess: (results) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast.success(`${results.length} tasks created successfully`);
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to create tasks: ${error.message}`);
     },
   });
 }
 
 // Category Queries
 export function useGetTaskCategories() {
-  const { actor, isFetching } = useSafeActor();
+  const { actor, isFetching } = useActor();
 
   return useQuery<TaskCategory[]>({
     queryKey: ['taskCategories'],
@@ -286,47 +313,8 @@ export function useGetTaskCategories() {
   });
 }
 
-export function useGetSubCategories() {
-  const { actor, isFetching } = useSafeActor();
-
-  return useQuery<SubCategory[]>({
-    queryKey: ['subCategories'],
-    queryFn: async () => {
-      if (!actor) return [];
-      return actor.getSubCategories();
-    },
-    enabled: !!actor && !isFetching,
-  });
-}
-
-export function useGetTaskStatuses() {
-  const { actor, isFetching } = useSafeActor();
-
-  return useQuery<TaskStatus[]>({
-    queryKey: ['taskStatuses'],
-    queryFn: async () => {
-      if (!actor) return [];
-      return actor.getTaskStatuses();
-    },
-    enabled: !!actor && !isFetching,
-  });
-}
-
-export function useGetPaymentStatuses() {
-  const { actor, isFetching } = useSafeActor();
-
-  return useQuery<PaymentStatus[]>({
-    queryKey: ['paymentStatuses'],
-    queryFn: async () => {
-      if (!actor) return [];
-      return actor.getPaymentStatuses();
-    },
-    enabled: !!actor && !isFetching,
-  });
-}
-
 export function useCreateTaskCategory() {
-  const { actor } = useSafeActor();
+  const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -339,13 +327,27 @@ export function useCreateTaskCategory() {
       toast.success('Category created successfully');
     },
     onError: (error: Error) => {
-      toast.error(parseAuthError(error));
+      toast.error(`Failed to create category: ${error.message}`);
     },
   });
 }
 
+// SubCategory Queries
+export function useGetSubCategories() {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<SubCategory[]>({
+    queryKey: ['subCategories'],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getSubCategories();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
 export function useCreateSubCategory() {
-  const { actor } = useSafeActor();
+  const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -358,13 +360,27 @@ export function useCreateSubCategory() {
       toast.success('Sub-category created successfully');
     },
     onError: (error: Error) => {
-      toast.error(parseAuthError(error));
+      toast.error(`Failed to create sub-category: ${error.message}`);
     },
   });
 }
 
+// Status Queries
+export function useGetTaskStatuses() {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<TaskStatus[]>({
+    queryKey: ['taskStatuses'],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getTaskStatuses();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
 export function useCreateTaskStatus() {
-  const { actor } = useSafeActor();
+  const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -377,13 +393,27 @@ export function useCreateTaskStatus() {
       toast.success('Status created successfully');
     },
     onError: (error: Error) => {
-      toast.error(parseAuthError(error));
+      toast.error(`Failed to create status: ${error.message}`);
     },
   });
 }
 
+// Payment Status Queries
+export function useGetPaymentStatuses() {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<PaymentStatus[]>({
+    queryKey: ['paymentStatuses'],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getPaymentStatuses();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
 export function useCreatePaymentStatus() {
-  const { actor } = useSafeActor();
+  const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -396,164 +426,16 @@ export function useCreatePaymentStatus() {
       toast.success('Payment status created successfully');
     },
     onError: (error: Error) => {
-      toast.error(parseAuthError(error));
+      toast.error(`Failed to create payment status: ${error.message}`);
     },
   });
 }
 
-// Analytics Queries
-export function useGetTaskCountsPerCategory() {
-  const { actor, isFetching } = useSafeActor();
-
-  return useQuery<Array<[string, bigint]>>({
-    queryKey: ['taskCountsPerCategory'],
-    queryFn: async () => {
-      if (!actor) return [];
-      return actor.getTaskCountsPerCategory();
-    },
-    enabled: !!actor && !isFetching,
-  });
-}
-
-export function useGetTaskCountsPerStatus() {
-  const { actor, isFetching } = useSafeActor();
-
-  return useQuery<Array<[string, bigint]>>({
-    queryKey: ['taskCountsPerStatus'],
-    queryFn: async () => {
-      if (!actor) return [];
-      return actor.getTaskCountsPerStatus();
-    },
-    enabled: !!actor && !isFetching,
-  });
-}
-
-export function useGetTaskCountsPerPaymentStatus() {
-  const { actor, isFetching } = useSafeActor();
-
-  return useQuery<Array<[string, bigint]>>({
-    queryKey: ['taskCountsPerPaymentStatus'],
-    queryFn: async () => {
-      if (!actor) return [];
-      return actor.getTaskCountsPerPaymentStatus();
-    },
-    enabled: !!actor && !isFetching,
-  });
-}
-
-// Bulk Task Creation
-export function useBulkCreateTasks() {
-  const { actor } = useSafeActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (tasksData: Array<[Principal, string, string, string, string, string, string, string, string, Time, Time, Time, bigint, bigint, bigint]>) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.bulkCreateTasks(tasksData);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['taskCountsPerCategory'] });
-      queryClient.invalidateQueries({ queryKey: ['taskCountsPerStatus'] });
-      queryClient.invalidateQueries({ queryKey: ['taskCountsPerPaymentStatus'] });
-    },
-    onError: (error: Error) => {
-      toast.error(parseAuthError(error));
-      throw error;
-    },
-  });
-}
-
-// User Management (Admin-Only)
-export function useListAllUsers() {
-  const { actor, isFetching } = useSafeActor();
-
-  return useQuery<UserProfile[]>({
-    queryKey: ['allUsers'],
-    queryFn: async () => {
-      if (!actor) return [];
-      return actor.listAllUsers();
-    },
-    enabled: !!actor && !isFetching,
-  });
-}
-
-export function useCreateUser() {
-  const { actor } = useSafeActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (data: { userPrincipal: Principal; name: string; email: string }) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.createUser(data.userPrincipal, data.name, data.email);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['allUsers'] });
-      toast.success('User created successfully');
-    },
-    onError: (error: Error) => {
-      toast.error(parseAuthError(error));
-    },
-  });
-}
-
-export function useDeleteUser() {
-  const { actor } = useSafeActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (user: Principal) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.deleteUser(user);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['allUsers'] });
-      toast.success('User deleted successfully');
-    },
-    onError: (error: Error) => {
-      toast.error(parseAuthError(error));
-    },
-  });
-}
-
-export function useSetUserRole() {
-  const { actor } = useSafeActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (data: { user: Principal; role: UserRole }) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.setUserRole(data.user, data.role);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['allUsers'] });
-      toast.success('User role updated successfully');
-    },
-    onError: (error: Error) => {
-      toast.error(parseAuthError(error));
-    },
-  });
-}
-
-export function useGetUserRole() {
-  const { actor } = useSafeActor();
-
-  return useMutation({
-    mutationFn: async (user: Principal) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.getUserRole(user);
-    },
-    onError: (error: Error) => {
-      toast.error(parseAuthError(error));
-    },
-  });
-}
-
-// Assignee/Captain Directory
+// Assignee/Captain Directory Queries
 export function useGetAssigneeCaptainDirectory() {
-  const { actor, isFetching } = useSafeActor();
+  const { actor, isFetching } = useActor();
 
-  return useQuery<Array<[string, string]>>({
+  return useQuery<[string, string][]>({
     queryKey: ['assigneeCaptainDirectory'],
     queryFn: async () => {
       if (!actor) return [];
@@ -564,7 +446,7 @@ export function useGetAssigneeCaptainDirectory() {
 }
 
 export function useAddAssigneeCaptainPair() {
-  const { actor } = useSafeActor();
+  const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -577,32 +459,13 @@ export function useAddAssigneeCaptainPair() {
       toast.success('Assignee/Captain pair added successfully');
     },
     onError: (error: Error) => {
-      toast.error(parseAuthError(error));
-    },
-  });
-}
-
-export function useBulkUpdateAssigneeCaptainPairs() {
-  const { actor } = useSafeActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (pairs: AssigneeCaptainInput[]) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.bulkUpdateAssigneeCaptainPairs(pairs);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['assigneeCaptainDirectory'] });
-    },
-    onError: (error: Error) => {
-      toast.error(parseAuthError(error));
-      throw error;
+      toast.error(`Failed to add pair: ${error.message}`);
     },
   });
 }
 
 export function useUpdateAssigneeCaptainPair() {
-  const { actor } = useSafeActor();
+  const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -615,13 +478,13 @@ export function useUpdateAssigneeCaptainPair() {
       toast.success('Assignee/Captain pair updated successfully');
     },
     onError: (error: Error) => {
-      toast.error(parseAuthError(error));
+      toast.error(`Failed to update pair: ${error.message}`);
     },
   });
 }
 
 export function useDeleteAssigneeCaptainPair() {
-  const { actor } = useSafeActor();
+  const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -634,7 +497,124 @@ export function useDeleteAssigneeCaptainPair() {
       toast.success('Assignee/Captain pair deleted successfully');
     },
     onError: (error: Error) => {
-      toast.error(parseAuthError(error));
+      toast.error(`Failed to delete pair: ${error.message}`);
+    },
+  });
+}
+
+export function useBulkUpdateAssigneeCaptainPairs() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (pairs: AssigneeCaptainInput[]) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.bulkUpdateAssigneeCaptainPairs(pairs);
+    },
+    onSuccess: (_, pairs) => {
+      queryClient.invalidateQueries({ queryKey: ['assigneeCaptainDirectory'] });
+      toast.success(`${pairs.length} pairs imported successfully`);
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to import pairs: ${error.message}`);
+    },
+  });
+}
+
+export function useBulkDeleteAssigneeCaptainPairs() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (assignees: string[]) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.bulkDeleteAssigneeCaptainPairs(assignees);
+    },
+    onSuccess: (_, assignees) => {
+      queryClient.invalidateQueries({ queryKey: ['assigneeCaptainDirectory'] });
+      toast.success(`${assignees.length} ${assignees.length === 1 ? 'pair' : 'pairs'} deleted successfully`);
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to delete pairs: ${error.message}`);
+    },
+  });
+}
+
+// Dashboard Analytics Hooks
+export function useGetTaskCountsPerCategory() {
+  const { data: tasks = [] } = useGetTasks();
+
+  return useQuery<[string, bigint][]>({
+    queryKey: ['taskCountsPerCategory', tasks],
+    queryFn: () => {
+      const counts = new Map<string, number>();
+      tasks.forEach(task => {
+        counts.set(task.taskCategory, (counts.get(task.taskCategory) || 0) + 1);
+      });
+      return Array.from(counts.entries()).map(([name, count]) => [name, BigInt(count)] as [string, bigint]);
+    },
+    enabled: tasks.length > 0,
+  });
+}
+
+export function useGetTaskCountsPerStatus() {
+  const { data: tasks = [] } = useGetTasks();
+
+  return useQuery<[string, bigint][]>({
+    queryKey: ['taskCountsPerStatus', tasks],
+    queryFn: () => {
+      const counts = new Map<string, number>();
+      tasks.forEach(task => {
+        counts.set(task.status, (counts.get(task.status) || 0) + 1);
+      });
+      return Array.from(counts.entries()).map(([name, count]) => [name, BigInt(count)] as [string, bigint]);
+    },
+    enabled: tasks.length > 0,
+  });
+}
+
+export function useGetTaskCountsPerPaymentStatus() {
+  const { data: tasks = [] } = useGetTasks();
+
+  return useQuery<[string, bigint][]>({
+    queryKey: ['taskCountsPerPaymentStatus', tasks],
+    queryFn: () => {
+      const counts = new Map<string, number>();
+      tasks.forEach(task => {
+        counts.set(task.paymentStatus, (counts.get(task.paymentStatus) || 0) + 1);
+      });
+      return Array.from(counts.entries()).map(([name, count]) => [name, BigInt(count)] as [string, bigint]);
+    },
+    enabled: tasks.length > 0,
+  });
+}
+
+export function useFilterTasksByCategory() {
+  const { data: tasks = [] } = useGetTasks();
+
+  return useMutation<Task[], Error, string>({
+    mutationFn: async (categoryName: string) => {
+      return tasks.filter(task => task.taskCategory === categoryName);
+    },
+  });
+}
+
+export function useFilterTasksByStatus() {
+  const { data: tasks = [] } = useGetTasks();
+
+  return useMutation<Task[], Error, string>({
+    mutationFn: async (statusName: string) => {
+      return tasks.filter(task => task.status === statusName);
+    },
+  });
+}
+
+export function useFilterTasksByPaymentStatus() {
+  const { data: tasks = [] } = useGetTasks();
+
+  return useMutation<Task[], Error, string>({
+    mutationFn: async (paymentStatusName: string) => {
+      return tasks.filter(task => task.paymentStatus === paymentStatusName);
     },
   });
 }

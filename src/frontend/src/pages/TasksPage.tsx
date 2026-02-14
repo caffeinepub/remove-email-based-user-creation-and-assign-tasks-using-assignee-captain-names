@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useGetTasks, useDeleteTask, useGetTaskCategories, useGetSubCategories, useGetTaskStatuses, useGetPaymentStatuses } from '../hooks/useQueries';
+import { useGetTasks, useDeleteTask, useGetTaskCategories, useGetSubCategories, useGetTaskStatuses, useGetPaymentStatuses, useBulkDeleteTasks, useBulkUpdateTasks } from '../hooks/useQueries';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -7,12 +7,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Pencil, Trash2, Filter, Plus, X } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Search, Pencil, Trash2, Filter, Plus, X, Edit } from 'lucide-react';
 import TaskFormDialog from '../components/TaskFormDialog';
 import AdminTaskDialog from '../components/AdminTaskDialog';
 import TaskDetailsTab from '../components/TaskDetailsTab';
+import BulkActionBar from '../components/BulkActionBar';
+import BulkEditTasksDialog from '../components/BulkEditTasksDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useTaskDetailTabs } from '../hooks/useTaskDetailTabs';
+import { useBulkSelection } from '../hooks/useBulkSelection';
 import type { Task } from '../backend';
 import { formatCurrency } from '../utils/currency';
 
@@ -27,6 +31,8 @@ export default function TasksPage({ isAdmin }: TasksPageProps) {
   const { data: statuses = [] } = useGetTaskStatuses();
   const { data: paymentStatuses = [] } = useGetPaymentStatuses();
   const deleteTask = useDeleteTask();
+  const bulkDeleteTasks = useBulkDeleteTasks();
+  const bulkUpdateTasks = useBulkUpdateTasks();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -35,6 +41,8 @@ export default function TasksPage({ isAdmin }: TasksPageProps) {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [deletingTask, setDeletingTask] = useState<Task | null>(null);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [isBulkEditing, setIsBulkEditing] = useState(false);
   
   const { activeTab, setActiveTab, openTabs, openTaskTab, closeTab, updateTabTask } = useTaskDetailTabs();
 
@@ -56,13 +64,49 @@ export default function TasksPage({ isAdmin }: TasksPageProps) {
     });
   }, [tasks, searchQuery, categoryFilter, statusFilter, paymentFilter]);
 
+  const {
+    selectedIds,
+    selectedCount,
+    toggleOne,
+    toggleAllVisible,
+    clearSelection,
+    isSelected,
+    headerCheckboxState,
+  } = useBulkSelection(filteredTasks, (task) => task.id);
+
   const handleDelete = async () => {
     if (deletingTask) {
       await deleteTask.mutateAsync(deletingTask.id);
-      // Close the tab if it's open
       closeTab(deletingTask.id);
       setDeletingTask(null);
     }
+  };
+
+  const handleBulkDelete = async () => {
+    const taskIds = Array.from(selectedIds);
+    await bulkDeleteTasks.mutateAsync(taskIds);
+    
+    // Close tabs for deleted tasks
+    taskIds.forEach(id => closeTab(id));
+    
+    clearSelection();
+    setIsBulkDeleting(false);
+  };
+
+  const handleBulkEdit = async (updates: { status?: string; paymentStatus?: string }) => {
+    const taskIds = Array.from(selectedIds);
+    
+    const bulkInput = {
+      updates: taskIds.map(taskId => ({
+        taskId,
+        status: updates.status,
+        paymentStatus: updates.paymentStatus,
+      })),
+    };
+
+    await bulkUpdateTasks.mutateAsync(bulkInput);
+    clearSelection();
+    setIsBulkEditing(false);
   };
 
   const handleTaskClick = (task: Task) => {
@@ -75,7 +119,6 @@ export default function TasksPage({ isAdmin }: TasksPageProps) {
   };
 
   const handleTaskUpdated = (updatedTask: Task) => {
-    // Update the tab with the latest task data
     updateTabTask(updatedTask);
   };
 
@@ -186,6 +229,29 @@ export default function TasksPage({ isAdmin }: TasksPageProps) {
             </CardContent>
           </Card>
 
+          {selectedCount > 0 && (
+            <BulkActionBar selectedCount={selectedCount} onClearSelection={clearSelection}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsBulkEditing(true)}
+                className="text-primary-foreground hover:bg-primary-foreground/20"
+              >
+                <Edit className="h-4 w-4 mr-1" />
+                Edit selected
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsBulkDeleting(true)}
+                className="text-primary-foreground hover:bg-primary-foreground/20"
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                Delete selected
+              </Button>
+            </BulkActionBar>
+          )}
+
           <Card>
             <CardHeader>
               <CardTitle>Task List</CardTitle>
@@ -209,6 +275,15 @@ export default function TasksPage({ isAdmin }: TasksPageProps) {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-12">
+                          <Checkbox
+                            checked={headerCheckboxState === 'checked'}
+                            onCheckedChange={toggleAllVisible}
+                            aria-label="Select all visible tasks"
+                            className={headerCheckboxState === 'indeterminate' ? 'data-[state=checked]:bg-primary' : ''}
+                            {...(headerCheckboxState === 'indeterminate' ? { 'data-state': 'indeterminate' } : {})}
+                          />
+                        </TableHead>
                         <TableHead>Client</TableHead>
                         <TableHead>Category</TableHead>
                         <TableHead>Sub Category</TableHead>
@@ -225,20 +300,26 @@ export default function TasksPage({ isAdmin }: TasksPageProps) {
                         <TableRow 
                           key={task.id} 
                           className="cursor-pointer hover:bg-muted/50 transition-colors"
-                          onClick={() => handleTaskClick(task)}
                         >
-                          <TableCell className="font-medium">{task.client}</TableCell>
-                          <TableCell>{task.taskCategory}</TableCell>
-                          <TableCell>{task.subCategory}</TableCell>
-                          <TableCell>
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                              checked={isSelected(task.id)}
+                              onCheckedChange={() => toggleOne(task.id)}
+                              aria-label={`Select task for ${task.client}`}
+                            />
+                          </TableCell>
+                          <TableCell className="font-medium" onClick={() => handleTaskClick(task)}>{task.client}</TableCell>
+                          <TableCell onClick={() => handleTaskClick(task)}>{task.taskCategory}</TableCell>
+                          <TableCell onClick={() => handleTaskClick(task)}>{task.subCategory}</TableCell>
+                          <TableCell onClick={() => handleTaskClick(task)}>
                             <Badge variant={getStatusColor(task.status)}>{task.status}</Badge>
                           </TableCell>
-                          <TableCell>
+                          <TableCell onClick={() => handleTaskClick(task)}>
                             <Badge variant={getPaymentColor(task.paymentStatus)}>{task.paymentStatus}</Badge>
                           </TableCell>
-                          <TableCell className="text-sm">{task.assigneeName || '-'}</TableCell>
-                          <TableCell className="text-sm">{task.captainName || '-'}</TableCell>
-                          <TableCell className="text-right font-medium">{formatCurrency(task.bill)}</TableCell>
+                          <TableCell className="text-sm" onClick={() => handleTaskClick(task)}>{task.assigneeName || '-'}</TableCell>
+                          <TableCell className="text-sm" onClick={() => handleTaskClick(task)}>{task.captainName || '-'}</TableCell>
+                          <TableCell className="text-right font-medium" onClick={() => handleTaskClick(task)}>{formatCurrency(task.bill)}</TableCell>
                           <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                             <div className="flex justify-end gap-2">
                               <Button
@@ -303,6 +384,16 @@ export default function TasksPage({ isAdmin }: TasksPageProps) {
         />
       )}
 
+      <BulkEditTasksDialog
+        open={isBulkEditing}
+        onOpenChange={setIsBulkEditing}
+        selectedCount={selectedCount}
+        statuses={statuses}
+        paymentStatuses={paymentStatuses}
+        onSave={handleBulkEdit}
+        isSaving={bulkUpdateTasks.isPending}
+      />
+
       <AlertDialog open={!!deletingTask} onOpenChange={(open) => !open && setDeletingTask(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -315,6 +406,28 @@ export default function TasksPage({ isAdmin }: TasksPageProps) {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={isBulkDeleting} onOpenChange={setIsBulkDeleting}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Selected Tasks</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedCount} selected {selectedCount === 1 ? 'task' : 'tasks'}? 
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleBulkDelete} 
+              disabled={bulkDeleteTasks.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {bulkDeleteTasks.isPending ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

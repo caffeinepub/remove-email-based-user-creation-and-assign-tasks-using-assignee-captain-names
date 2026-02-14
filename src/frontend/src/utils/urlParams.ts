@@ -206,3 +206,35 @@ export function getSecretFromHash(paramName: string): string | null {
 export function getSecretParameter(paramName: string): string | null {
     return getSecretFromHash(paramName);
 }
+
+/**
+ * Clears all initialization parameters from sessionStorage
+ * Used for troubleshooting connection issues by resetting to defaults
+ * 
+ * This clears:
+ * - caffeineAdminToken: Admin authentication token
+ * - backendCanisterId: Custom backend canister ID override
+ * - Any other cached connection parameters
+ */
+export function clearAllInitializationParameters(): void {
+    const parametersToReset = [
+        'caffeineAdminToken',
+        'backendCanisterId',
+    ];
+
+    parametersToReset.forEach(param => {
+        clearSessionParameter(param);
+    });
+
+    console.log('[Connection Reset] Cleared all cached initialization parameters');
+}
+
+/**
+ * Gets the backend canister ID override from URL or sessionStorage
+ * URL takes precedence over sessionStorage
+ * 
+ * @returns The canister ID override if set, null otherwise
+ */
+export function getBackendCanisterIdOverride(): string | null {
+    return getPersistedUrlParameter('backendCanisterId');
+}

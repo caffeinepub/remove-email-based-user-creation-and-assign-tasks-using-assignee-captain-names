@@ -28,6 +28,22 @@ export const UserRole = IDL.Variant({
   'user' : IDL.Null,
   'guest' : IDL.Null,
 });
+export const BulkTaskUpdateInput = IDL.Record({
+  'updates' : IDL.Vec(
+    IDL.Record({
+      'status' : IDL.Opt(IDL.Text),
+      'paymentStatus' : IDL.Opt(IDL.Text),
+      'taskId' : IDL.Text,
+    })
+  ),
+});
+export const PaymentStatus = IDL.Record({ 'id' : IDL.Text, 'name' : IDL.Text });
+export const TaskCategory = IDL.Record({ 'id' : IDL.Text, 'name' : IDL.Text });
+export const SubCategory = IDL.Record({
+  'id' : IDL.Text,
+  'name' : IDL.Text,
+  'category' : TaskCategory,
+});
 export const Time = IDL.Int;
 export const Task = IDL.Record({
   'id' : IDL.Text,
@@ -48,13 +64,6 @@ export const Task = IDL.Record({
   'updatedAt' : Time,
   'outstandingAmount' : IDL.Nat,
   'taskCategory' : IDL.Text,
-});
-export const PaymentStatus = IDL.Record({ 'id' : IDL.Text, 'name' : IDL.Text });
-export const TaskCategory = IDL.Record({ 'id' : IDL.Text, 'name' : IDL.Text });
-export const SubCategory = IDL.Record({
-  'id' : IDL.Text,
-  'name' : IDL.Text,
-  'category' : TaskCategory,
 });
 export const TaskStatus = IDL.Record({ 'id' : IDL.Text, 'name' : IDL.Text });
 export const UserProfile = IDL.Record({
@@ -97,36 +106,14 @@ export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'addAssigneeCaptainPair' : IDL.Func([AssigneeCaptainInput], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-  'bulkCreateTasks' : IDL.Func(
-      [
-        IDL.Vec(
-          IDL.Tuple(
-            IDL.Principal,
-            IDL.Text,
-            IDL.Text,
-            IDL.Text,
-            IDL.Text,
-            IDL.Text,
-            IDL.Text,
-            IDL.Text,
-            IDL.Text,
-            Time,
-            Time,
-            Time,
-            IDL.Nat,
-            IDL.Nat,
-            IDL.Nat,
-          )
-        ),
-      ],
-      [IDL.Vec(Task)],
-      [],
-    ),
+  'bulkDeleteAssigneeCaptainPairs' : IDL.Func([IDL.Vec(IDL.Text)], [], []),
+  'bulkDeleteTasks' : IDL.Func([IDL.Vec(IDL.Text)], [], []),
   'bulkUpdateAssigneeCaptainPairs' : IDL.Func(
       [IDL.Vec(AssigneeCaptainInput)],
       [],
       [],
     ),
+  'bulkUpdateTasks' : IDL.Func([BulkTaskUpdateInput], [], []),
   'createPaymentStatus' : IDL.Func([IDL.Text], [PaymentStatus], []),
   'createSubCategory' : IDL.Func([IDL.Text, TaskCategory], [SubCategory], []),
   'createTask' : IDL.Func(
@@ -152,29 +139,7 @@ export const idlService = IDL.Service({
     ),
   'createTaskCategory' : IDL.Func([IDL.Text], [TaskCategory], []),
   'createTaskStatus' : IDL.Func([IDL.Text], [TaskStatus], []),
-  'createUser' : IDL.Func(
-      [IDL.Principal, IDL.Text, IDL.Text],
-      [UserProfile],
-      [],
-    ),
   'deleteAssigneeCaptainPair' : IDL.Func([IDL.Text], [], []),
-  'deleteTask' : IDL.Func([IDL.Text], [], []),
-  'deleteUser' : IDL.Func([IDL.Principal], [], []),
-  'filterTasksByAssigneeName' : IDL.Func(
-      [IDL.Text],
-      [IDL.Vec(Task)],
-      ['query'],
-    ),
-  'filterTasksByCaptainName' : IDL.Func([IDL.Text], [IDL.Vec(Task)], ['query']),
-  'filterTasksByCategory' : IDL.Func([IDL.Text], [IDL.Vec(Task)], ['query']),
-  'filterTasksByClient' : IDL.Func([IDL.Text], [IDL.Vec(Task)], ['query']),
-  'filterTasksByPaymentStatus' : IDL.Func(
-      [IDL.Text],
-      [IDL.Vec(Task)],
-      ['query'],
-    ),
-  'filterTasksByStatus' : IDL.Func([IDL.Text], [IDL.Vec(Task)], ['query']),
-  'filterTasksBySubCategory' : IDL.Func([IDL.Text], [IDL.Vec(Task)], ['query']),
   'getAssigneeCaptainDirectory' : IDL.Func(
       [],
       [IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text))],
@@ -186,21 +151,6 @@ export const idlService = IDL.Service({
   'getSubCategories' : IDL.Func([], [IDL.Vec(SubCategory)], ['query']),
   'getTask' : IDL.Func([IDL.Text], [IDL.Opt(Task)], ['query']),
   'getTaskCategories' : IDL.Func([], [IDL.Vec(TaskCategory)], ['query']),
-  'getTaskCountsPerCategory' : IDL.Func(
-      [],
-      [IDL.Vec(IDL.Tuple(IDL.Text, IDL.Nat))],
-      ['query'],
-    ),
-  'getTaskCountsPerPaymentStatus' : IDL.Func(
-      [],
-      [IDL.Vec(IDL.Tuple(IDL.Text, IDL.Nat))],
-      ['query'],
-    ),
-  'getTaskCountsPerStatus' : IDL.Func(
-      [],
-      [IDL.Vec(IDL.Tuple(IDL.Text, IDL.Nat))],
-      ['query'],
-    ),
   'getTaskStatuses' : IDL.Func([], [IDL.Vec(TaskStatus)], ['query']),
   'getTasks' : IDL.Func([], [IDL.Vec(Task)], ['query']),
   'getUserProfile' : IDL.Func(
@@ -208,11 +158,8 @@ export const idlService = IDL.Service({
       [IDL.Opt(UserProfile)],
       ['query'],
     ),
-  'getUserRole' : IDL.Func([IDL.Principal], [UserRole], ['query']),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
-  'listAllUsers' : IDL.Func([], [IDL.Vec(UserProfile)], ['query']),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
-  'setUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'updateAssigneeCaptainPair' : IDL.Func(
       [IDL.Text, AssigneeCaptainUpdate],
       [],
@@ -264,6 +211,22 @@ export const idlFactory = ({ IDL }) => {
     'user' : IDL.Null,
     'guest' : IDL.Null,
   });
+  const BulkTaskUpdateInput = IDL.Record({
+    'updates' : IDL.Vec(
+      IDL.Record({
+        'status' : IDL.Opt(IDL.Text),
+        'paymentStatus' : IDL.Opt(IDL.Text),
+        'taskId' : IDL.Text,
+      })
+    ),
+  });
+  const PaymentStatus = IDL.Record({ 'id' : IDL.Text, 'name' : IDL.Text });
+  const TaskCategory = IDL.Record({ 'id' : IDL.Text, 'name' : IDL.Text });
+  const SubCategory = IDL.Record({
+    'id' : IDL.Text,
+    'name' : IDL.Text,
+    'category' : TaskCategory,
+  });
   const Time = IDL.Int;
   const Task = IDL.Record({
     'id' : IDL.Text,
@@ -284,13 +247,6 @@ export const idlFactory = ({ IDL }) => {
     'updatedAt' : Time,
     'outstandingAmount' : IDL.Nat,
     'taskCategory' : IDL.Text,
-  });
-  const PaymentStatus = IDL.Record({ 'id' : IDL.Text, 'name' : IDL.Text });
-  const TaskCategory = IDL.Record({ 'id' : IDL.Text, 'name' : IDL.Text });
-  const SubCategory = IDL.Record({
-    'id' : IDL.Text,
-    'name' : IDL.Text,
-    'category' : TaskCategory,
   });
   const TaskStatus = IDL.Record({ 'id' : IDL.Text, 'name' : IDL.Text });
   const UserProfile = IDL.Record({
@@ -333,36 +289,14 @@ export const idlFactory = ({ IDL }) => {
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'addAssigneeCaptainPair' : IDL.Func([AssigneeCaptainInput], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-    'bulkCreateTasks' : IDL.Func(
-        [
-          IDL.Vec(
-            IDL.Tuple(
-              IDL.Principal,
-              IDL.Text,
-              IDL.Text,
-              IDL.Text,
-              IDL.Text,
-              IDL.Text,
-              IDL.Text,
-              IDL.Text,
-              IDL.Text,
-              Time,
-              Time,
-              Time,
-              IDL.Nat,
-              IDL.Nat,
-              IDL.Nat,
-            )
-          ),
-        ],
-        [IDL.Vec(Task)],
-        [],
-      ),
+    'bulkDeleteAssigneeCaptainPairs' : IDL.Func([IDL.Vec(IDL.Text)], [], []),
+    'bulkDeleteTasks' : IDL.Func([IDL.Vec(IDL.Text)], [], []),
     'bulkUpdateAssigneeCaptainPairs' : IDL.Func(
         [IDL.Vec(AssigneeCaptainInput)],
         [],
         [],
       ),
+    'bulkUpdateTasks' : IDL.Func([BulkTaskUpdateInput], [], []),
     'createPaymentStatus' : IDL.Func([IDL.Text], [PaymentStatus], []),
     'createSubCategory' : IDL.Func([IDL.Text, TaskCategory], [SubCategory], []),
     'createTask' : IDL.Func(
@@ -388,37 +322,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'createTaskCategory' : IDL.Func([IDL.Text], [TaskCategory], []),
     'createTaskStatus' : IDL.Func([IDL.Text], [TaskStatus], []),
-    'createUser' : IDL.Func(
-        [IDL.Principal, IDL.Text, IDL.Text],
-        [UserProfile],
-        [],
-      ),
     'deleteAssigneeCaptainPair' : IDL.Func([IDL.Text], [], []),
-    'deleteTask' : IDL.Func([IDL.Text], [], []),
-    'deleteUser' : IDL.Func([IDL.Principal], [], []),
-    'filterTasksByAssigneeName' : IDL.Func(
-        [IDL.Text],
-        [IDL.Vec(Task)],
-        ['query'],
-      ),
-    'filterTasksByCaptainName' : IDL.Func(
-        [IDL.Text],
-        [IDL.Vec(Task)],
-        ['query'],
-      ),
-    'filterTasksByCategory' : IDL.Func([IDL.Text], [IDL.Vec(Task)], ['query']),
-    'filterTasksByClient' : IDL.Func([IDL.Text], [IDL.Vec(Task)], ['query']),
-    'filterTasksByPaymentStatus' : IDL.Func(
-        [IDL.Text],
-        [IDL.Vec(Task)],
-        ['query'],
-      ),
-    'filterTasksByStatus' : IDL.Func([IDL.Text], [IDL.Vec(Task)], ['query']),
-    'filterTasksBySubCategory' : IDL.Func(
-        [IDL.Text],
-        [IDL.Vec(Task)],
-        ['query'],
-      ),
     'getAssigneeCaptainDirectory' : IDL.Func(
         [],
         [IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text))],
@@ -430,21 +334,6 @@ export const idlFactory = ({ IDL }) => {
     'getSubCategories' : IDL.Func([], [IDL.Vec(SubCategory)], ['query']),
     'getTask' : IDL.Func([IDL.Text], [IDL.Opt(Task)], ['query']),
     'getTaskCategories' : IDL.Func([], [IDL.Vec(TaskCategory)], ['query']),
-    'getTaskCountsPerCategory' : IDL.Func(
-        [],
-        [IDL.Vec(IDL.Tuple(IDL.Text, IDL.Nat))],
-        ['query'],
-      ),
-    'getTaskCountsPerPaymentStatus' : IDL.Func(
-        [],
-        [IDL.Vec(IDL.Tuple(IDL.Text, IDL.Nat))],
-        ['query'],
-      ),
-    'getTaskCountsPerStatus' : IDL.Func(
-        [],
-        [IDL.Vec(IDL.Tuple(IDL.Text, IDL.Nat))],
-        ['query'],
-      ),
     'getTaskStatuses' : IDL.Func([], [IDL.Vec(TaskStatus)], ['query']),
     'getTasks' : IDL.Func([], [IDL.Vec(Task)], ['query']),
     'getUserProfile' : IDL.Func(
@@ -452,11 +341,8 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Opt(UserProfile)],
         ['query'],
       ),
-    'getUserRole' : IDL.Func([IDL.Principal], [UserRole], ['query']),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
-    'listAllUsers' : IDL.Func([], [IDL.Vec(UserProfile)], ['query']),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
-    'setUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'updateAssigneeCaptainPair' : IDL.Func(
         [IDL.Text, AssigneeCaptainUpdate],
         [],

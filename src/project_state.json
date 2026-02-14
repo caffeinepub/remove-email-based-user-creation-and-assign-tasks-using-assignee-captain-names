@@ -1,345 +1,40 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 21,
-  "summary": "Task assignment app should not require creating users with email; tasks should be assigned using assignee name and their captain only.",
-  "architectural_notes": [
-    "Do not require user account creation via email; represent assignees by name and captain for task assignment.",
-    "Bulk-uploaded tasks should be owned/assigned to the currently authenticated admin performing the upload; the upload payload must not include any Principal-derived owner/assignee fields (e.g., ownerPrincipal)."
-  ],
+  "projectStateVersion": 3,
+  "summary": "New project",
+  "architectural_notes": [],
   "known_issues": [
-    "Users cannot update task statuses (status changes not saving/updating).",
-    "Production app not loading after Version 14 deployment (user reports 'not loading').",
-    "Bulk task CSV upload fails when user-provided column headers do not exactly match the app’s expected template headers; needs template/header alignment.",
-    "Bulk task CSV upload fails with Principal checksum error (e.g., Principal \"aaaaa-aa\" invalid checksum from \"user-0\") because the frontend upload payload still sends an ownerPrincipal/Principal-derived field."
+    "Frontend shows 'Unable to Load' because it cannot reach the backend canister (likely due to outdated/mismatched backend canister ID or stale generated declarations)."
   ],
-  "isFixRequest": false,
+  "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-remove-the-admin-create-new-user-and-user-list-role-management-ui-so-admins-are-no-longer-prompted-to-create-users-using-email-or-principal-id",
-      "title": "Remove the admin \"Create New User\" and user list/role management UI so admins are no longer prompted to create users using email or principal ID.",
+      "id": "feature-audit-and-fix-the-frontend-backend-actor-initialization-so-the-production-frontend-always-targets-the-currently-deployed-backend-canister-id-eliminate-stale-mismatched-canister-ids-and-stale-generated-declarations-as-causes-of-the-unable-to-load-screen",
+      "title": "Audit and fix the frontend backend-actor initialization so the production frontend always targets the currently deployed backend canister ID (eliminate stale/mismatched canister IDs and stale generated declarations as causes of the 'Unable to Load' screen).",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-update-task-create-edit-flows-to-capture-assignment-using-two-text-fields-1-assignee-name-and-2-captain-name-instead-of-selecting-an-assignee-user-principal",
-      "title": "Update task create/edit flows to capture assignment using two text fields: (1) Assignee Name and (2) Captain Name, instead of selecting an assignee user/principal.",
+      "id": "feature-if-a-user-configurable-backend-canister-override-is-supported-via-session-url-parameters-e-g-the-existing-session-key-backendcanisterid-ensure-it-is-actually-respected-by-actor-creation-and-that-the-reset-connection-settings-action-fully-clears-it-and-restores-default-behavior",
+      "title": "If a user-configurable backend canister override is supported via session/URL parameters (e.g., the existing session key `backendCanisterId`), ensure it is actually respected by actor creation and that the 'Reset Connection Settings' action fully clears it and restores default behavior.",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "feature-update-bulk-task-upload-to-no-longer-require-user-emails-principals-for-owner-assignee-resolution-instead-accept-assignee-name-and-captain-name-as-text-columns-and-create-tasks-without-requiring-user-creation",
-      "title": "Update bulk task upload to no longer require user emails/principals for owner/assignee resolution; instead, accept assignee name and captain name as text columns and create tasks without requiring user creation.",
-      "reqIds": [
-        "REQ-4"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-a-new-admin-panel-ui-section-to-add-manage-assignees-and-their-captains-create-list-edit-delete",
-      "title": "Add a new Admin Panel UI section to add/manage assignees and their captains (create, list, edit, delete).",
-      "reqIds": [
-        "REQ-7"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-task-create-edit-dialogs-to-optionally-select-an-assignee-from-the-saved-directory-and-auto-fill-assignee-and-captain-fields-while-still-allowing-manual-overrides",
-      "title": "Update task create/edit dialogs to optionally select an assignee from the saved directory and auto-fill assignee and captain fields while still allowing manual overrides.",
-      "reqIds": [
-        "REQ-8"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-react-query-hooks-and-caching-for-assignee-directory-apis-and-ensure-task-related-screens-reuse-the-cached-data-where-applicable",
-      "title": "Add React Query hooks and caching for assignee directory APIs, and ensure task-related screens reuse the cached data where applicable.",
-      "reqIds": [
-        "REQ-9"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-investigate-and-fix-the-issue-where-updating-an-existing-task-s-status-does-not-persist-i-e-after-selecting-a-new-status-and-clicking-update-task-the-task-still-shows-the-old-status-ensure-the-fix-works-from-the-tasks-list-edit-flow-and-the-dashboard-task-detail-edit-flow",
-      "title": "Investigate and fix the issue where updating an existing task’s Status does not persist (i.e., after selecting a new status and clicking “Update Task”, the task still shows the old status). Ensure the fix works from the Tasks list edit flow and the Dashboard task detail edit flow.",
-      "reqIds": [
-        "REQ-11"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-an-admin-only-bulk-import-flow-to-create-multiple-assignee-captain-directory-entries-at-once-using-a-downloadable-csv-template-and-a-csv-file-upload-in-the-admin-panel-assignees-section-frontend-src-components-assigneedirectorymanagement-tsx",
-      "title": "Add an Admin-only bulk import flow to create multiple Assignee/Captain directory entries at once using a downloadable CSV template and a CSV file upload in the Admin Panel > Assignees section (frontend/src/components/AssigneeDirectoryManagement.tsx).",
-      "reqIds": [
-        "REQ-13"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-frontend-react-query-hooks-frontend-src-hooks-usequeries-ts-to-call-the-new-bulk-assignee-import-backend-api-and-integrate-it-into-the-assigneedirectorymanagement-upload-ui-with-loading-states-and-success-error-toasts-in-english",
-      "title": "Update frontend React Query hooks (frontend/src/hooks/useQueries.ts) to call the new bulk assignee import backend API and integrate it into the AssigneeDirectoryManagement upload UI with loading states and success/error toasts in English.",
-      "reqIds": [
-        "REQ-15"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-implement-an-in-app-tabbed-details-experience-so-that-clicking-a-list-item-opens-a-new-tab-view-showing-details-related-to-that-item-starting-with-the-tasks-list-specifically-in-taskspage-frontend-src-pages-taskspage-tsx-clicking-a-task-row-not-just-the-edit-icon-should-open-a-new-tab-labeled-with-a-concise-identifier-e-g-client-or-task-id-that-displays-the-task-s-details-and-allows-admin-editing-from-that-detail-view",
-      "title": "Implement an in-app tabbed “details” experience so that clicking a list item opens a new tab/view showing details related to that item (starting with the Tasks list). Specifically: in TasksPage (frontend/src/pages/TasksPage.tsx), clicking a task row (not just the edit icon) should open a new tab labeled with a concise identifier (e.g., client or task id) that displays the task’s details and allows admin editing from that detail view.",
-      "reqIds": [
-        "REQ-16"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-extend-the-same-click-opens-a-details-tab-pattern-to-the-assignee-captain-directory-list-in-admin-panel-assignees-frontend-src-components-assigneedirectorymanagement-tsx-clicking-an-assignee-row-opens-a-details-tab-view-for-that-assignee-showing-the-assignee-and-captain-values-and-offering-edit-delete-actions-admin-only-by-nature-of-the-admin-panel",
-      "title": "Extend the same “click opens a details tab” pattern to the Assignee/Captain directory list in Admin Panel > Assignees (frontend/src/components/AssigneeDirectoryManagement.tsx): clicking an assignee row opens a details tab/view for that assignee showing the assignee and captain values and offering edit/delete actions (admin-only by nature of the Admin Panel).",
-      "reqIds": [
-        "REQ-17"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-extend-the-existing-in-page-tabbed-details-pattern-so-that-clicking-a-task-row-anywhere-tasks-are-listed-opens-a-new-tab-showing-details-for-that-task-not-just-in-the-tasks-page-at-minimum-implement-this-for-the-dashboard-s-task-list-dialog-frontend-src-components-taskdetaildialog-tsx-so-each-task-row-click-opens-a-new-tab-labeled-with-a-concise-identifier-e-g-client-name-and-renders-the-existing-taskdetailstab-details-view-for-that-task-with-a-close-x-control-that-returns-to-the-list",
-      "title": "Extend the existing in-page tabbed “details” pattern so that clicking a task row anywhere tasks are listed opens a new tab showing details for that task (not just in the Tasks page). At minimum, implement this for the Dashboard’s task list dialog (frontend/src/components/TaskDetailDialog.tsx) so each task row click opens a new tab labeled with a concise identifier (e.g., client name) and renders the existing TaskDetailsTab details view for that task, with a close (X) control that returns to the list.",
-      "reqIds": [
-        "REQ-18"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-make-click-row-opens-a-details-tab-consistent-for-task-lists-by-ensuring-action-buttons-e-g-edit-delete-icons-do-not-also-trigger-opening-the-details-tab-and-that-row-click-targets-are-clearly-indicated-pointer-cursor-hover-state-wherever-implemented",
-      "title": "Make “click row opens a details tab” consistent for task lists by ensuring action buttons (e.g., edit/delete icons) do not also trigger opening the details tab and that row click targets are clearly indicated (pointer cursor + hover state) wherever implemented.",
-      "reqIds": [
-        "REQ-19"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-prevent-the-app-from-getting-stuck-on-a-blank-screen-or-indefinite-loading-state-by-adding-a-top-level-runtime-error-boundary-and-an-explicit-something-went-wrong-fallback-screen-that-renders-when-react-throws-during-initial-render-or-when-a-critical-initialization-step-fails",
-      "title": "Prevent the app from getting stuck on a blank screen or indefinite loading state by adding a top-level runtime error boundary and an explicit “Something went wrong” fallback screen that renders when React throws during initial render or when a critical initialization step fails.",
-      "reqIds": [
-        "REQ-20"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-the-authenticated-app-bootstrap-flow-so-that-failures-or-timeouts-in-critical-startup-queries-loading-the-backend-actor-fetching-caller-profile-checking-admin-status-do-not-block-the-entire-ui-indefinitely-show-an-english-error-state-with-a-retry-action-when-these-steps-fail",
-      "title": "Update the authenticated app bootstrap flow so that failures or timeouts in critical startup queries (loading the backend actor, fetching caller profile, checking admin status) do not block the entire UI indefinitely; show an English error state with a retry action when these steps fail.",
-      "reqIds": [
-        "REQ-21"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-minimal-client-side-diagnostics-for-production-load-failures-capture-and-log-initialization-failures-from-internet-identity-initialization-actor-creation-and-critical-react-query-calls-without-logging-secrets-such-as-the-caffeineadmintoken",
-      "title": "Add minimal client-side diagnostics for production load failures: capture and log initialization failures from Internet Identity initialization, actor creation, and critical React Query calls (without logging secrets such as the `caffeineAdminToken`).",
-      "reqIds": [
-        "REQ-22"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-increase-the-size-width-height-of-the-dashboard-modal-window-shown-in-the-screenshot-the-taskdetaildialog-used-for-all-categories-all-statuses-all-payment-types-and-chart-click-task-lists-so-it-uses-substantially-more-of-the-viewport-on-desktop-while-remaining-responsive-on-smaller-screens",
-      "title": "Increase the size (width + height) of the Dashboard modal window shown in the screenshot (the TaskDetailDialog used for \"All Categories\" / \"All Statuses\" / \"All Payment Types\" and chart-click task lists) so it uses substantially more of the viewport on desktop while remaining responsive on smaller screens.",
-      "reqIds": [
-        "REQ-23"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-the-admin-panel-bulk-task-upload-downloadable-csv-template-to-use-exactly-these-column-headers-in-this-order-client-name-task-category-sub-category-status-comment-assigned-name-due-date-assignment-date-completion-date-bill-advance-received-outstanding-amount-payment-status",
-      "title": "Update the Admin Panel > Bulk Task Upload downloadable CSV template to use exactly these column headers (in this order): \"Client Name\", \"Task Category\", \"Sub Category\", \"Status\", \"Comment\", \"Assigned Name\", \"Due Date\", \"Assignment Date\", \"Completion Date\", \"Bill\", \"Advance Received\", \"Outstanding Amount\", \"Payment Status\".",
-      "reqIds": [
-        "REQ-24"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-the-bulk-task-upload-parser-validator-to-accept-csv-files-whose-headers-match-the-new-template-case-insensitive-and-map-the-new-headers-to-task-fields-client-name-task-category-and-sub-category-must-be-required-all-other-columns-must-be-optional",
-      "title": "Update the Bulk Task Upload parser/validator to accept CSV files whose headers match the new template (case-insensitive), and map the new headers to task fields. \"Client Name\", \"Task Category\", and \"Sub Category\" must be required; all other columns must be optional.",
-      "reqIds": [
-        "REQ-25"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-wire-the-updated-bulk-upload-flow-end-to-end-so-that-the-frontend-bulk-upload-mutation-passes-the-new-fields-to-the-backend-createtask-api-and-the-upload-succeeds-without-the-generic-please-check-your-file-format-error-for-correctly-formatted-files",
-      "title": "Wire the updated bulk upload flow end-to-end so that the frontend bulk upload mutation passes the new fields to the backend createTask API and the upload succeeds without the generic \"Please check your file format\" error for correctly formatted files.",
-      "reqIds": [
-        "REQ-27"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-task-create-edit-ui-taskformdialog-and-admintaskdialog-and-task-details-ui-taskdetailstab-to-display-and-allow-editing-of-the-new-fields-comment-due-date-assignment-date-completion-date-bill-advance-received-outstanding-amount",
-      "title": "Update task create/edit UI (TaskFormDialog and AdminTaskDialog) and task details UI (TaskDetailsTab) to display and allow editing of the new fields: Comment, Due Date, Assignment Date, Completion Date, Bill, Advance Received, Outstanding Amount.",
-      "reqIds": [
-        "REQ-28"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-the-bulk-task-upload-flow-to-stop-converting-any-csv-value-e-g-user-0-into-a-principal-id-and-instead-assign-bulk-uploaded-tasks-to-the-currently-authenticated-uploader-matching-single-task-creation-behavior",
-      "title": "Update the Bulk Task Upload flow to stop converting any CSV value (e.g., \"user-0\") into a Principal ID, and instead assign bulk-uploaded tasks to the currently authenticated uploader (matching single-task creation behavior).",
-      "reqIds": [
-        "REQ-30"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-refactor-frontend-bulkuploadsection-to-remove-dependencies-on-the-user-list-for-determining-ownership-and-remove-any-hardcoded-placeholder-principal-generation-used-during-bulk-upload",
-      "title": "Refactor frontend BulkUploadSection to remove dependencies on the user list for determining ownership, and remove any hardcoded/placeholder principal generation used during bulk upload.",
-      "reqIds": [
-        "REQ-31"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-the-frontend-bulk-create-react-query-hook-typing-and-payload-shape-frontend-src-hooks-usequeries-ts-so-that-bulkcreatetasks-does-not-require-an-explicit-owner-principal-from-the-csv-upload-code-path-and-can-pass-no-owner-specified-to-the-backend-to-default-to-the-caller",
-      "title": "Update the frontend bulk-create React Query hook typing and payload shape (frontend/src/hooks/useQueries.ts) so that bulkCreateTasks does not require an explicit owner Principal from the CSV upload code path, and can pass \"no owner specified\" to the backend to default to the caller.",
-      "reqIds": [
-        "REQ-32"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-the-dashboard-frontend-src-pages-dashboard-tsx-so-the-total-tasks-summary-card-is-clickable-and-opens-the-existing-taskdetaildialog-showing-all-tasks-same-behavior-as-the-existing-clickable-summary-cards-for-categories-statuses-payment-types",
-      "title": "Update the Dashboard (frontend/src/pages/Dashboard.tsx) so the \"Total Tasks\" summary card is clickable and opens the existing TaskDetailDialog showing all tasks (same behavior as the existing clickable summary cards for Categories/Statuses/Payment Types).",
-      "reqIds": [
-        "REQ-33"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-revenue-reporting-to-the-dashboard-and-task-list-views-using-existing-task-financial-fields-specifically-1-add-a-new-dashboard-kpi-card-that-displays-total-revenue-computed-as-the-sum-of-task-bill-across-the-currently-loaded-tasks-and-2-update-the-dashboard-task-list-dialog-table-frontend-src-components-taskdetaildialog-tsx-to-include-a-revenue-bill-column-per-task-formatted-as-currency",
-      "title": "Add revenue reporting to the Dashboard and task list views using existing task financial fields. Specifically: (1) add a new Dashboard KPI card that displays \"Total Revenue\" computed as the sum of task.bill across the currently loaded tasks; and (2) update the Dashboard task list dialog table (frontend/src/components/TaskDetailDialog.tsx) to include a \"Revenue\" (Bill) column per task, formatted as currency.",
-      "reqIds": [
-        "REQ-34"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-ensure-the-payment-status-analytics-and-drill-down-remain-intact-after-the-dashboard-updates-the-payment-status-distribution-visualization-must-still-render-and-clicking-a-payment-status-must-still-open-the-taskdetaildialog-pre-filtered-to-tasks-with-that-payment-status",
-      "title": "Ensure the Payment Status analytics and drill-down remain intact after the Dashboard updates: the \"Payment Status Distribution\" visualization must still render, and clicking a payment status must still open the TaskDetailDialog pre-filtered to tasks with that payment status.",
-      "reqIds": [
-        "REQ-35"
-      ],
-      "version": 1
-    }
-  ],
-  "new_feature_requests": [
-    {
-      "id": "AR-1",
-      "summary": "Remove/avoid 'Create New User' with email; support assigning tasks using only assignee name and their captain",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-4",
-      "summary": "Change the backend Task model and task APIs to store assignee and captain as text fields (e.g., assigneeName, captainName) rather than a Principal assignee, and update createTask/updateTask accordingly.",
+      "id": "feature-improve-connection-diagnostics-for-this-failure-mode-by-logging-redacted-connection-metadata-during-actor-creation-failures-to-help-confirm-whether-the-issue-is-a-canister-id-mismatch-vs-network-unavailable-backend-without-exposing-sensitive-values",
+      "title": "Improve connection diagnostics for this failure mode by logging (redacted) connection metadata during actor creation failures to help confirm whether the issue is a canister ID mismatch vs. network/unavailable backend, without exposing sensitive values.",
       "reqIds": [
         "REQ-3"
       ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-6",
-      "summary": "Add a conditional Motoko state migration to preserve existing stored tasks when upgrading from Principal-based assignee to text-based assignee/captain fields.",
-      "reqIds": [
-        "REQ-5"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-7",
-      "summary": "Add a UI option to add/manage assignees and their captain (so admins can define assignee-captain pairs)",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-8",
-      "summary": "Add backend support for an admin-managed directory of assignee-to-captain pairs, including storage and admin-only CRUD APIs, plus a user-accessible read API for populating task forms.",
-      "reqIds": [
-        "REQ-6"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-12",
-      "summary": "Ensure upgrades preserve existing state by extending the conditional migration to include the new assignee directory state with safe defaults.",
-      "reqIds": [
-        "REQ-10"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-14",
-      "summary": "Add a focused regression check for task updates so that changes to Status and Payment Status are verifiably persisted alongside other editable fields (client, category/subcategory, assigneeName, captainName).",
-      "reqIds": [
-        "REQ-12"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-15",
-      "summary": "Add bulk addition of assignees (assignee/captain directory entries) using an import template (e.g., CSV/XLS template + upload).",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-16",
-      "summary": "When clicking an item in a list, open a new tab/view showing details related to that item.",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-18",
-      "summary": "Add a backend API to support bulk creation/upsert of assignee/captain directory entries from a list of pairs, restricted to admins, and expose it via the generated frontend actor types for use by the new bulk import UI.",
-      "reqIds": [
-        "REQ-14"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-24",
-      "summary": "Update the bulk task addition (CSV) template and upload parser to match the desired task-addition columns/headers (e.g., Client Name, Task Category, Sub Category, Status, Comment, Assigned Name, Due Date, Assignment Date, Completion Date, Bill, Advance Received, Outstanding Amount, Payment Status).",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-27",
-      "summary": "Extend the backend Task model and task APIs to store the additional fields coming from the new upload template: comment, dueDate, assignmentDate, completionDate, bill, advanceReceived, outstandingAmount. These fields should be persisted on create and update, and returned by getTask/getTasks/filter APIs.",
-      "reqIds": [
-        "REQ-26"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-30",
-      "summary": "Ensure upgrade safety for existing stored tasks after adding new Task fields by providing safe defaults for the new fields (e.g., empty text) for tasks created prior to this change.",
-      "reqIds": [
-        "REQ-29"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-31",
-      "summary": "Fix bulk task CSV upload to stop sending ownerPrincipal (e.g., 'user-0'); instead assign bulk-uploaded tasks to the current admin uploader (matching single-task creation).",
-      "reqIds": [],
-      "status": "in_progress"
-    },
-    {
-      "id": "AR-33",
-      "summary": "Update the dashboard to show all tasks, payment status, and total revenue per task (and/or aggregated totals).",
-      "reqIds": [],
-      "status": "pending"
+      "version": 1
     }
   ],
-  "projectName": "Remove email-based user creation and assign tasks using assignee + captain names",
+  "new_feature_requests": [],
+  "projectName": "Fix frontend-backend canister ID mismatch causing 'Unable to Load'",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

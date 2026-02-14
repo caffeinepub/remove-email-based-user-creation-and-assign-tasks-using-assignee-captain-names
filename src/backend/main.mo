@@ -1,16 +1,16 @@
+// Copyright (c) 2024 kamigate-dev
+// ALL RIGHTS REVEALED
 import Array "mo:core/Array";
 import Iter "mo:core/Iter";
 import Map "mo:core/Map";
-import Text "mo:core/Text";
-import Time "mo:core/Time";
 import Runtime "mo:core/Runtime";
-import Order "mo:core/Order";
 import Principal "mo:core/Principal";
+import Time "mo:core/Time";
+import Order "mo:core/Order";
+import Text "mo:core/Text";
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
 import MixinStorage "blob-storage/Mixin";
-
-
 
 actor {
   // Initialize the access control system.
@@ -18,7 +18,7 @@ actor {
   include MixinAuthorization(accessControlState);
   include MixinStorage();
 
-  // Task Type.
+  // Task Data Structure.
   type Task = {
     id : Text;
     owner : Principal;
@@ -47,7 +47,18 @@ actor {
     };
   };
 
-  // User Profile Type.
+  // AssigneeCaptainPair Data.
+  public type AssigneeCaptainInput = {
+    assignee : Text;
+    captain : Text;
+  };
+
+  public type AssigneeCaptainUpdate = {
+    assignee : Text;
+    captain : Text;
+  };
+
+  // User Profile.
   public type UserProfile = {
     name : Text;
     email : Text;
@@ -60,6 +71,7 @@ actor {
     };
   };
 
+  // Task Category.
   type TaskCategory = {
     id : Text;
     name : Text;
@@ -71,6 +83,7 @@ actor {
     };
   };
 
+  // Sub Category.
   type SubCategory = {
     id : Text;
     name : Text;
@@ -83,6 +96,7 @@ actor {
     };
   };
 
+  // Task Status.
   type TaskStatus = {
     id : Text;
     name : Text;
@@ -94,6 +108,7 @@ actor {
     };
   };
 
+  // Payment Status.
   type PaymentStatus = {
     id : Text;
     name : Text;
@@ -105,21 +120,16 @@ actor {
     };
   };
 
-  type AssigneeCaptainPair = {
-    assignee : Text;
-    captain : Text;
+  // Bulk Task Update Input Structure.
+  public type BulkTaskUpdateInput = {
+    updates : [{
+      taskId : Text;
+      status : ?Text;
+      paymentStatus : ?Text;
+    }];
   };
 
-  public type AssigneeCaptainInput = {
-    assignee : Text;
-    captain : Text;
-  };
-
-  public type AssigneeCaptainUpdate = {
-    assignee : Text;
-    captain : Text;
-  };
-
+  // Persistent data maps.
   let userProfiles = Map.empty<Principal, UserProfile>();
   let tasks = Map.empty<Text, Task>();
   let taskCategories = Map.empty<Text, TaskCategory>();
@@ -128,56 +138,7 @@ actor {
   let paymentStatuses = Map.empty<Text, PaymentStatus>();
   let assigneeCaptainDirectory = Map.empty<Text, Text>();
 
-  // New Assignee/Captain API
-  public shared ({ caller }) func addAssigneeCaptainPair(input : AssigneeCaptainInput) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can add assignee/captain pairs");
-    };
-    if (assigneeCaptainDirectory.containsKey(input.assignee)) {
-      Runtime.trap("Assignee already exists");
-    };
-    assigneeCaptainDirectory.add(input.assignee, input.captain);
-  };
-
-  public shared ({ caller }) func bulkUpdateAssigneeCaptainPairs(pairs : [AssigneeCaptainInput]) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can bulk update assignee/captain pairs");
-    };
-
-    for (pair in pairs.values()) {
-      assigneeCaptainDirectory.add(pair.assignee, pair.captain);
-    };
-  };
-
-  public shared ({ caller }) func updateAssigneeCaptainPair(assignee : Text, update : AssigneeCaptainUpdate) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can update assignee/captain pairs");
-    };
-    if (not assigneeCaptainDirectory.containsKey(assignee)) {
-      Runtime.trap("Assignee does not exist");
-    };
-    assigneeCaptainDirectory.add(update.assignee, update.captain);
-  };
-
-  public shared ({ caller }) func deleteAssigneeCaptainPair(assignee : Text) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can delete assignee/captain pairs");
-    };
-    if (not assigneeCaptainDirectory.containsKey(assignee)) {
-      Runtime.trap("Assignee does not exist");
-    };
-    assigneeCaptainDirectory.remove(assignee);
-  };
-
-  public query ({ caller }) func getAssigneeCaptainDirectory() : async [(Text, Text)] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view assignee/captain directory");
-    };
-
-    assigneeCaptainDirectory.entries().toArray();
-  };
-
-  // Required User Profile Functions.
+  // User Profile Functions.
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can view profiles");
@@ -199,136 +160,7 @@ actor {
     userProfiles.add(caller, profile);
   };
 
-  // User Management (Admin-Only).
-  public shared ({ caller }) func createUser(userPrincipal : Principal, name : Text, email : Text) : async UserProfile {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can create users");
-    };
-    let profile : UserProfile = {
-      name;
-      email;
-      createdAt = Time.now();
-    };
-    userProfiles.add(userPrincipal, profile);
-    AccessControl.assignRole(accessControlState, caller, userPrincipal, #user);
-    profile;
-  };
-
-  public shared ({ caller }) func deleteUser(user : Principal) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can delete users");
-    };
-    if (not userProfiles.containsKey(user)) {
-      Runtime.trap("User does not exist");
-    };
-    userProfiles.remove(user);
-  };
-
-  public query ({ caller }) func listAllUsers() : async [UserProfile] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can list all users");
-    };
-    userProfiles.values().toArray();
-  };
-
-  public shared ({ caller }) func setUserRole(user : Principal, role : AccessControl.UserRole) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can assign roles");
-    };
-    AccessControl.assignRole(accessControlState, caller, user, role);
-  };
-
-  public query ({ caller }) func getUserRole(user : Principal) : async AccessControl.UserRole {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can view user roles");
-    };
-    AccessControl.getUserRole(accessControlState, user);
-  };
-
-  // Task Category Management (Admin-Only).
-  public shared ({ caller }) func createTaskCategory(name : Text) : async TaskCategory {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can create task categories");
-    };
-    let id = name;
-    let category : TaskCategory = {
-      id;
-      name;
-    };
-    taskCategories.add(id, category);
-    category;
-  };
-
-  public shared ({ caller }) func createSubCategory(name : Text, category : TaskCategory) : async SubCategory {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can create sub-categories");
-    };
-    let id = name;
-    let subCategory : SubCategory = {
-      id;
-      name;
-      category;
-    };
-    subCategories.add(id, subCategory);
-    subCategory;
-  };
-
-  public shared ({ caller }) func createTaskStatus(name : Text) : async TaskStatus {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can create task statuses");
-    };
-    let id = name;
-    let status : TaskStatus = {
-      id;
-      name;
-    };
-    taskStatuses.add(id, status);
-    status;
-  };
-
-  public shared ({ caller }) func createPaymentStatus(name : Text) : async PaymentStatus {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can create payment statuses");
-    };
-    let id = name;
-    let status : PaymentStatus = {
-      id;
-      name;
-    };
-    paymentStatuses.add(id, status);
-    status;
-  };
-
-  // Query functions for categories/statuses.
-  public query ({ caller }) func getTaskCategories() : async [TaskCategory] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view task categories");
-    };
-    taskCategories.values().toArray();
-  };
-
-  public query ({ caller }) func getSubCategories() : async [SubCategory] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view sub-categories");
-    };
-    subCategories.values().toArray();
-  };
-
-  public query ({ caller }) func getTaskStatuses() : async [TaskStatus] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view task statuses");
-    };
-    taskStatuses.values().toArray();
-  };
-
-  public query ({ caller }) func getPaymentStatuses() : async [PaymentStatus] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view payment statuses");
-    };
-    paymentStatuses.values().toArray();
-  };
-
-  // Task Management with Assignee.
+  // Task Management APIs.
   public shared ({ caller }) func createTask(
     ownerPrincipal : ?Principal,
     client : Text,
@@ -385,7 +217,6 @@ actor {
     task;
   };
 
-  // Update Task with Assignee.
   public shared ({ caller }) func updateTask(
     taskId : Text,
     client : Text,
@@ -416,7 +247,7 @@ actor {
       Runtime.trap("Unauthorized: Can only update your own tasks");
     };
 
-    var updatedTask = {
+    let updatedTask = {
       id = existingTask.id;
       owner = existingTask.owner;
       client;
@@ -440,43 +271,22 @@ actor {
     updatedTask;
   };
 
-  // Delete Task.
-  public shared ({ caller }) func deleteTask(taskId : Text) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can delete tasks");
-    };
-
-    let existingTask = switch (tasks.get(taskId)) {
-      case (?task) { task };
-      case null { Runtime.trap("Task not found") };
-    };
-
-    if (existingTask.owner != caller and not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Can only delete your own tasks");
-    };
-
-    tasks.remove(taskId);
-  };
-
-  // Get single Task.
   public query ({ caller }) func getTask(taskId : Text) : async ?Task {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can view tasks");
     };
 
-    let task = tasks.get(taskId);
-    switch (task) {
-      case (?t) {
-        if (t.owner != caller and not AccessControl.isAdmin(accessControlState, caller)) {
+    switch (tasks.get(taskId)) {
+      case (?task) {
+        if (task.owner != caller and not AccessControl.isAdmin(accessControlState, caller)) {
           Runtime.trap("Unauthorized: Can only view your own tasks");
         };
-        ?t;
+        ?task;
       };
       case null { null };
     };
   };
 
-  // Get Tasks by Owner.
   public query ({ caller }) func getTasks() : async [Task] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can view tasks");
@@ -490,211 +300,207 @@ actor {
     };
   };
 
-  // Filtering and Analytics Queries.
-  public query ({ caller }) func filterTasksByClient(clientId : Text) : async [Task] {
+  // Bulk Task Delete API.
+  public shared ({ caller }) func bulkDeleteTasks(taskIds : [Text]) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can filter tasks by client");
-    };
-    let taskArray = tasks.values().toArray();
-    let filteredTasks = if (AccessControl.isAdmin(accessControlState, caller)) {
-      taskArray.filter(func(task) { task.client == clientId });
-    } else {
-      taskArray.filter(func(task) { task.owner == caller and task.client == clientId });
-    };
-    filteredTasks;
-  };
-
-  public query ({ caller }) func filterTasksByCategory(category : Text) : async [Task] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can filter tasks by category");
-    };
-    let taskArray = tasks.values().toArray();
-    let filteredTasks = if (AccessControl.isAdmin(accessControlState, caller)) {
-      taskArray.filter(func(task) { task.taskCategory == category });
-    } else {
-      taskArray.filter(func(task) { task.owner == caller and task.taskCategory == category });
-    };
-    filteredTasks;
-  };
-
-  public query ({ caller }) func filterTasksBySubCategory(subCategory : Text) : async [Task] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can filter tasks by sub-category");
-    };
-    let taskArray = tasks.values().toArray();
-    let filteredTasks = if (AccessControl.isAdmin(accessControlState, caller)) {
-      taskArray.filter(func(task) { task.subCategory == subCategory });
-    } else {
-      taskArray.filter(func(task) { task.owner == caller and task.subCategory == subCategory });
-    };
-    filteredTasks;
-  };
-
-  public query ({ caller }) func filterTasksByStatus(status : Text) : async [Task] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can filter tasks by status");
-    };
-    let taskArray = tasks.values().toArray();
-    let filteredTasks = if (AccessControl.isAdmin(accessControlState, caller)) {
-      taskArray.filter(func(task) { task.status == status });
-    } else {
-      taskArray.filter(func(task) { task.owner == caller and task.status == status });
-    };
-    filteredTasks;
-  };
-
-  public query ({ caller }) func filterTasksByPaymentStatus(paymentStatus : Text) : async [Task] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can filter tasks by payment status");
-    };
-    let taskArray = tasks.values().toArray();
-    let filteredTasks = if (AccessControl.isAdmin(accessControlState, caller)) {
-      taskArray.filter(func(task) { task.paymentStatus == paymentStatus });
-    } else {
-      taskArray.filter(func(task) { task.owner == caller and task.paymentStatus == paymentStatus });
-    };
-    filteredTasks;
-  };
-
-  // Analytics Queries.
-  public query ({ caller }) func getTaskCountsPerCategory() : async [(Text, Nat)] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can get task counts per category");
-    };
-    let taskArray = tasks.values().toArray();
-    let relevantTasks = if (AccessControl.isAdmin(accessControlState, caller)) {
-      taskArray;
-    } else {
-      taskArray.filter(func(task) { task.owner == caller });
+      Runtime.trap("Unauthorized: Only users can perform bulk delete");
     };
 
-    let counts = Map.empty<Text, Nat>();
-    for (task in relevantTasks.vals()) {
-      let currentCount = switch (counts.get(task.taskCategory)) {
-        case (?count) { count };
-        case null { 0 };
+    for (taskId in taskIds.values()) {
+      switch (tasks.get(taskId)) {
+        case (?task) {
+          if (task.owner != caller and not AccessControl.isAdmin(accessControlState, caller)) {
+            Runtime.trap("Unauthorized: Can only delete your own tasks");
+          };
+          tasks.remove(taskId);
+        };
+        case (_) {};
       };
-      counts.add(task.taskCategory, currentCount + 1);
     };
-    counts.entries().toArray();
   };
 
-  public query ({ caller }) func getTaskCountsPerStatus() : async [(Text, Nat)] {
+  // Bulk Task Update API.
+  public shared ({ caller }) func bulkUpdateTasks(input : BulkTaskUpdateInput) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can get task counts per status");
-    };
-    let taskArray = tasks.values().toArray();
-    let relevantTasks = if (AccessControl.isAdmin(accessControlState, caller)) {
-      taskArray;
-    } else {
-      taskArray.filter(func(task) { task.owner == caller });
+      Runtime.trap("Unauthorized: Only users can perform bulk update");
     };
 
-    let counts = Map.empty<Text, Nat>();
-    for (task in relevantTasks.vals()) {
-      let currentCount = switch (counts.get(task.status)) {
-        case (?count) { count };
-        case null { 0 };
+    for (update in input.updates.values()) {
+      switch (tasks.get(update.taskId)) {
+        case (?task) {
+          if (task.owner != caller and not AccessControl.isAdmin(accessControlState, caller)) {
+            Runtime.trap("Unauthorized: Can only update your own tasks");
+          };
+
+          let updatedTask = {
+            task with
+            status = switch (update.status) { case (?newStatus) { newStatus }; case (null) { task.status } };
+            paymentStatus = switch (update.paymentStatus) {
+              case (?newStatus) { newStatus };
+              case (null) { task.paymentStatus };
+            };
+            updatedAt = Time.now();
+          };
+          tasks.add(update.taskId, updatedTask);
+        };
+        case (null) {};
       };
-      counts.add(task.status, currentCount + 1);
     };
-    counts.entries().toArray();
   };
 
-  public query ({ caller }) func getTaskCountsPerPaymentStatus() : async [(Text, Nat)] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can get task counts per payment status");
-    };
-    let taskArray = tasks.values().toArray();
-    let relevantTasks = if (AccessControl.isAdmin(accessControlState, caller)) {
-      taskArray;
-    } else {
-      taskArray.filter(func(task) { task.owner == caller });
-    };
-
-    let counts = Map.empty<Text, Nat>();
-    for (task in relevantTasks.vals()) {
-      let currentCount = switch (counts.get(task.paymentStatus)) {
-        case (?count) { count };
-        case null { 0 };
-      };
-      counts.add(task.paymentStatus, currentCount + 1);
-    };
-    counts.entries().toArray();
-  };
-
-  // Bulk Task Creation with Assignee.
-  public shared ({ caller }) func bulkCreateTasks(tasksData : [(Principal, Text, Text, Text, Text, Text, Text, Text, Text, Time.Time, Time.Time, Time.Time, Nat, Nat, Nat)]) : async [Task] {
+  // Task Category Management.
+  public shared ({ caller }) func createTaskCategory(name : Text) : async TaskCategory {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can bulk create tasks");
+      Runtime.trap("Unauthorized: Only admins can create task categories");
     };
-
-    let createdTasks = tasksData.map(
-      func(taskData) {
-        let (owner, client, taskCategory, subCategory, status, paymentStatus, assigneeName, captainName, comment, dueDate, assignmentDate, completionDate, bill, advanceReceived, outstandingAmount) = taskData;
-
-        // Validate that the owner exists in userProfiles
-        if (not userProfiles.containsKey(owner)) {
-          Runtime.trap("Invalid owner: User does not exist");
-        };
-
-        let id = Time.now().toText();
-        let task : Task = {
-          id;
-          owner;
-          client;
-          taskCategory;
-          subCategory;
-          status;
-          paymentStatus;
-          assigneeName;
-          captainName;
-          comment;
-          dueDate;
-          assignmentDate;
-          completionDate;
-          bill;
-          advanceReceived;
-          outstandingAmount;
-          createdAt = Time.now();
-          updatedAt = Time.now();
-        };
-        tasks.add(id, task);
-        task;
-      },
-    );
-    createdTasks;
+    let id = name;
+    let category : TaskCategory = {
+      id;
+      name;
+    };
+    taskCategories.add(id, category);
+    category;
   };
 
-  // Filter Tasks by AssigneeName (Text-based).
-  public query ({ caller }) func filterTasksByAssigneeName(assigneeName : Text) : async [Task] {
+  public query ({ caller }) func getTaskCategories() : async [TaskCategory] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can filter tasks by assignee");
+      Runtime.trap("Unauthorized: Only users can view task categories");
     };
-
-    let taskArray = tasks.values().toArray();
-
-    let filteredTasks = if (AccessControl.isAdmin(accessControlState, caller)) {
-      taskArray.filter(func(task) { task.assigneeName == assigneeName });
-    } else {
-      taskArray.filter(func(task) { task.owner == caller and task.assigneeName == assigneeName });
-    };
-    filteredTasks;
+    taskCategories.values().toArray();
   };
 
-  // Filter Tasks by CaptainName.
-  public query ({ caller }) func filterTasksByCaptainName(captainName : Text) : async [Task] {
+  // Sub-Category Management.
+  public shared ({ caller }) func createSubCategory(name : Text, category : TaskCategory) : async SubCategory {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can create sub-categories");
+    };
+    let id = name;
+    let subCategory : SubCategory = {
+      id;
+      name;
+      category;
+    };
+    subCategories.add(id, subCategory);
+    subCategory;
+  };
+
+  public query ({ caller }) func getSubCategories() : async [SubCategory] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can filter tasks by captain");
+      Runtime.trap("Unauthorized: Only users can view sub-categories");
+    };
+    subCategories.values().toArray();
+  };
+
+  // Task Status Management.
+  public shared ({ caller }) func createTaskStatus(name : Text) : async TaskStatus {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can create task statuses");
+    };
+    let id = name;
+    let status : TaskStatus = {
+      id;
+      name;
+    };
+    taskStatuses.add(id, status);
+    status;
+  };
+
+  public query ({ caller }) func getTaskStatuses() : async [TaskStatus] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view task statuses");
+    };
+    taskStatuses.values().toArray();
+  };
+
+  // Payment Status Management.
+  public shared ({ caller }) func createPaymentStatus(name : Text) : async PaymentStatus {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can create payment statuses");
+    };
+    let id = name;
+    let status : PaymentStatus = {
+      id;
+      name;
+    };
+    paymentStatuses.add(id, status);
+    status;
+  };
+
+  public query ({ caller }) func getPaymentStatuses() : async [PaymentStatus] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view payment statuses");
+    };
+    paymentStatuses.values().toArray();
+  };
+
+  // Assignee/Captain Directory API.
+  public shared ({ caller }) func addAssigneeCaptainPair(input : AssigneeCaptainInput) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can add assignee/captain pairs");
     };
 
-    let taskArray = tasks.values().toArray();
-
-    let filteredTasks = if (AccessControl.isAdmin(accessControlState, caller)) {
-      taskArray.filter(func(task) { task.captainName == captainName });
-    } else {
-      taskArray.filter(func(task) { task.owner == caller and task.captainName == captainName });
+    if (assigneeCaptainDirectory.containsKey(input.assignee)) {
+      Runtime.trap("Assignee already exists");
     };
-    filteredTasks;
+
+    assigneeCaptainDirectory.add(input.assignee, input.captain);
+  };
+
+  public shared ({ caller }) func bulkUpdateAssigneeCaptainPairs(pairs : [AssigneeCaptainInput]) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can bulk update assignee/captain pairs");
+    };
+
+    for (pair in pairs.values()) {
+      assigneeCaptainDirectory.add(pair.assignee, pair.captain);
+    };
+  };
+
+  public shared ({ caller }) func updateAssigneeCaptainPair(assignee : Text, update : AssigneeCaptainUpdate) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can update assignee/captain pairs");
+    };
+
+    if (not assigneeCaptainDirectory.containsKey(assignee)) {
+      Runtime.trap("Assignee does not exist");
+    };
+
+    // Remove old entry if assignee name changed
+    if (assignee != update.assignee) {
+      assigneeCaptainDirectory.remove(assignee);
+    };
+
+    assigneeCaptainDirectory.add(update.assignee, update.captain);
+  };
+
+  public shared ({ caller }) func deleteAssigneeCaptainPair(assignee : Text) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can delete assignee/captain pairs");
+    };
+
+    if (not assigneeCaptainDirectory.containsKey(assignee)) {
+      Runtime.trap("Assignee does not exist");
+    };
+
+    assigneeCaptainDirectory.remove(assignee);
+  };
+
+  // Bulk Delete Assignee/Captain Pairs API.
+  public shared ({ caller }) func bulkDeleteAssigneeCaptainPairs(assignees : [Text]) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can bulk delete assignee/captain pairs");
+    };
+
+    for (assignee in assignees.values()) {
+      assigneeCaptainDirectory.remove(assignee);
+    };
+  };
+
+  public query ({ caller }) func getAssigneeCaptainDirectory() : async [(Text, Text)] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view assignee/captain directory");
+    };
+
+    assigneeCaptainDirectory.entries().toArray();
   };
 };

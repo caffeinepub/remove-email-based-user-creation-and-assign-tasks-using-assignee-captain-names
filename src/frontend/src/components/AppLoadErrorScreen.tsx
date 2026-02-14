@@ -1,21 +1,32 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, RefreshCw, RotateCcw, Loader2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface AppLoadErrorScreenProps {
   message?: string;
+  detailedMessage?: string;
   onReload?: () => void;
   onRetry?: () => void;
+  onResetAndRetry?: () => void;
+  showResetOption?: boolean;
+  isReconnecting?: boolean;
+  shouldFallbackToReload?: boolean;
 }
 
 /**
- * User-facing error screen for app load failures
- * Shows clear English message without exposing sensitive details
+ * User-facing error screen for app load failures with multiple recovery options
+ * Shows clear English messages without exposing sensitive details, with loading states during reconnection
  */
 export default function AppLoadErrorScreen({ 
   message = 'The app failed to load.',
+  detailedMessage,
   onReload,
-  onRetry 
+  onRetry,
+  onResetAndRetry,
+  showResetOption = false,
+  isReconnecting = false,
+  shouldFallbackToReload = false,
 }: AppLoadErrorScreenProps) {
   const handleReload = () => {
     if (onReload) {
@@ -35,16 +46,63 @@ export default function AppLoadErrorScreen({
           <CardTitle>Unable to Load</CardTitle>
           <CardDescription>{message}</CardDescription>
         </CardHeader>
-        <CardContent className="text-center text-sm text-muted-foreground">
-          <p>Please try reloading the page. If the problem persists, check your internet connection or try again later.</p>
-        </CardContent>
+        
+        {detailedMessage && (
+          <CardContent>
+            <p className="text-sm text-muted-foreground text-center">
+              {detailedMessage}
+            </p>
+          </CardContent>
+        )}
+
+        {shouldFallbackToReload && (
+          <CardContent>
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Maximum reconnection attempts reached. The page will reload to restore connection.
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        )}
+
         <CardFooter className="flex flex-col gap-2">
-          <Button onClick={handleReload} className="w-full">
-            Reload Page
-          </Button>
           {onRetry && (
-            <Button onClick={onRetry} variant="outline" className="w-full">
-              Try Again
+            <Button 
+              onClick={onRetry} 
+              className="w-full"
+              disabled={isReconnecting}
+            >
+              {isReconnecting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Reconnecting...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Retry Connection
+                </>
+              )}
+            </Button>
+          )}
+          
+          {showResetOption && onResetAndRetry && (
+            <Button 
+              onClick={onResetAndRetry} 
+              variant="outline"
+              className="w-full"
+              disabled={isReconnecting}
+            >
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Reset Connection Settings
+            </Button>
+          )}
+
+          {!onRetry && (
+            <Button onClick={handleReload} className="w-full">
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Reload Page
             </Button>
           )}
         </CardFooter>

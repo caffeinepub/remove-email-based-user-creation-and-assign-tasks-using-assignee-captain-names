@@ -2,11 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-dashboard-frontend-src-pages-dashboard-tsx-so-the-total-tasks-summary-card-is-clickable-and-opens-the-existing-taskdetaildialog-showing-all-tasks-same-behavior-as-the-existing-clickable-summary-cards-for-categories-statuses-payment-types",
-      "featureTitle": "Update the Dashboard (frontend/src/pages/Dashboard.tsx) so the \"Total Tasks\" summary card is clickable and opens the existing TaskDetailDialog showing all tasks (same behavior as the existing clickable summary cards for Categories/Statuses/Payment Types).",
+      "featureId": "feature-audit-and-fix-the-frontend-backend-actor-initialization-so-the-production-frontend-always-targets-the-currently-deployed-backend-canister-id-eliminate-stale-mismatched-canister-ids-and-stale-generated-declarations-as-causes-of-the-unable-to-load-screen",
+      "featureTitle": "Audit and fix the frontend backend-actor initialization so the production frontend always targets the currently deployed backend canister ID (eliminate stale/mismatched canister IDs and stale generated declarations as causes of the 'Unable to Load' screen).",
       "files": [
-        "frontend/src/components/TaskDetailDialog.tsx",
-        "frontend/src/pages/Dashboard.tsx"
+        "frontend/src/hooks/useSafeActor.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -18,18 +17,16 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-33"
+        "REQ-1"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-add-revenue-reporting-to-the-dashboard-and-task-list-views-using-existing-task-financial-fields-specifically-1-add-a-new-dashboard-kpi-card-that-displays-total-revenue-computed-as-the-sum-of-task-bill-across-the-currently-loaded-tasks-and-2-update-the-dashboard-task-list-dialog-table-frontend-src-components-taskdetaildialog-tsx-to-include-a-revenue-bill-column-per-task-formatted-as-currency",
-      "featureTitle": "Add revenue reporting to the Dashboard and task list views using existing task financial fields. Specifically: (1) add a new Dashboard KPI card that displays \"Total Revenue\" computed as the sum of task.bill across the currently loaded tasks; and (2) update the Dashboard task list dialog table (frontend/src/components/TaskDetailDialog.tsx) to include a \"Revenue\" (Bill) column per task, formatted as currency.",
+      "featureId": "feature-if-a-user-configurable-backend-canister-override-is-supported-via-session-url-parameters-e-g-the-existing-session-key-backendcanisterid-ensure-it-is-actually-respected-by-actor-creation-and-that-the-reset-connection-settings-action-fully-clears-it-and-restores-default-behavior",
+      "featureTitle": "If a user-configurable backend canister override is supported via session/URL parameters (e.g., the existing session key `backendCanisterId`), ensure it is actually respected by actor creation and that the 'Reset Connection Settings' action fully clears it and restores default behavior.",
       "files": [
-        "frontend/src/components/TaskDetailDialog.tsx",
-        "frontend/src/pages/Dashboard.tsx",
-        "frontend/src/pages/TasksPage.tsx",
-        "frontend/src/utils/currency.ts"
+        "frontend/src/components/AppLoadErrorScreen.tsx",
+        "frontend/src/utils/urlParams.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -41,15 +38,15 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-34"
+        "REQ-2"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-ensure-the-payment-status-analytics-and-drill-down-remain-intact-after-the-dashboard-updates-the-payment-status-distribution-visualization-must-still-render-and-clicking-a-payment-status-must-still-open-the-taskdetaildialog-pre-filtered-to-tasks-with-that-payment-status",
-      "featureTitle": "Ensure the Payment Status analytics and drill-down remain intact after the Dashboard updates: the \"Payment Status Distribution\" visualization must still render, and clicking a payment status must still open the TaskDetailDialog pre-filtered to tasks with that payment status.",
+      "featureId": "feature-improve-connection-diagnostics-for-this-failure-mode-by-logging-redacted-connection-metadata-during-actor-creation-failures-to-help-confirm-whether-the-issue-is-a-canister-id-mismatch-vs-network-unavailable-backend-without-exposing-sensitive-values",
+      "featureTitle": "Improve connection diagnostics for this failure mode by logging (redacted) connection metadata during actor creation failures to help confirm whether the issue is a canister ID mismatch vs. network/unavailable backend, without exposing sensitive values.",
       "files": [
-        "frontend/src/pages/Dashboard.tsx"
+        "frontend/src/utils/diagnostics.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -61,7 +58,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-35"
+        "REQ-3"
       ],
       "confidence": "high"
     }
